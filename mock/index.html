@@ -1320,9 +1320,11 @@
       color: #fff;
       border-color: #444;
     }
+    /* クリック作成ポップアップ本体 */
+    .quick-popup {
       position: fixed;
       z-index: 9000;
-      width: 300px;
+      width: 310px;
       border-radius: 5px;
       overflow: hidden;
       box-shadow: 0 8px 40px rgba(0,0,0,0.6);
@@ -1345,6 +1347,76 @@
       -moz-appearance: textfield;
     }
 
+    /* クイック作成ポップアップ：ライトテーマ上書き */
+    .quick-popup .dialog-contents {
+      background: #eee;
+      padding: 16px 20px 10px;
+    }
+    .quick-popup .side-detail-form dl dt {
+      color: #555;
+    }
+    .quick-popup .side-detail-form .d-input {
+      background: #fff;
+      border: 1px solid #ccc;
+      color: #333;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .quick-popup .side-detail-form .d-input:focus {
+      border-color: #6898d8;
+      box-shadow: 0 0 0 2px rgba(104,152,216,0.25);
+    }
+    .quick-popup .side-detail-form .d-select-wrap {
+      background: #fff;
+      border: 1px solid #ccc;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .quick-popup .side-detail-form .d-select {
+      color: #333;
+    }
+    .quick-popup .spin-btn {
+      background: #fff;
+      border-color: #bbb;
+      color: #666;
+    }
+    .quick-popup .spin-btn:hover {
+      background: #f0f0f0;
+      color: #333;
+    }
+    .quick-popup .side-detail-form .disp-type-option {
+      background: #fff;
+      border-color: #bbb;
+      color: #444;
+    }
+    .quick-popup .side-detail-form .disp-type-option:hover {
+      border-color: #777;
+    }
+    .quick-popup .side-detail-form .disp-type-option.is-active {
+      background: #444;
+      border-color: #444;
+      color: #fff;
+    }
+    .quick-popup .side-detail-form .disp-type-preview--marker {
+      background: #ddd;
+      color: #444;
+    }
+    .quick-popup .side-detail-form .disp-type-preview--icon svg {
+      fill: #555;
+    }
+    .quick-popup .side-detail-form .disp-type-label {
+      color: #555;
+    }
+    .quick-popup .detail-section-sep {
+      color: #888;
+      margin: 4px 0;
+    }
+    .quick-popup .detail-section-sep::before,
+    .quick-popup .detail-section-sep::after {
+      background: rgba(0,0,0,0.15);
+    }
+    .quick-popup .radio-row label {
+      color: #444;
+    }
+
     /* 汎用ラジオ行（表示方法・再生方法など） */
     .radio-row {
       display: flex;
@@ -1365,12 +1437,73 @@
       color: #888;
     }
 
+    /* ============================
+       整列パネル
+    ============================ */
+    .align-panel {
+      padding: 6px 10px 10px;
+    }
+    .align-panel.is-disabled .align-btn {
+      opacity: 0.35;
+      pointer-events: none;
+      cursor: default;
+    }
+    .align-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .align-row-label {
+      width: 28px;
+      font-size: 10px;
+      color: #99a;
+      flex-shrink: 0;
+      text-align: center;
+    }
+    .align-btns {
+      display: flex;
+      gap: 4px;
+      flex: 1;
+    }
+    .align-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 30px;
+      background: #2a3040;
+      border: 1px solid #4a5468;
+      border-radius: 4px;
+      color: #9ab;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .align-btn:hover {
+      background: #364055;
+      border-color: #6898d8;
+      color: #cde;
+    }
+    .align-btn:active {
+      background: #1e2a40;
+    }
+
     /* アノテーションラベルテキスト */
     .ann-label {
       pointer-events: none;
       overflow: hidden;
       text-overflow: ellipsis;
       max-width: 100%;
+    }
+
+    /* 複数選択時の外接バウンディングボックスガイド */
+    #selectionBoundingBox {
+      position: absolute;
+      pointer-events: none;
+      box-sizing: border-box;
+      border: 2px dashed rgba(104,152,216,0.8);
+      background: transparent;
+      z-index: 900;
     }
 
     /* アノテーション削除ボタン */
@@ -1779,6 +1912,69 @@
           </div>
         </div>
 
+        <!-- 整列パネル -->
+        <hr class="panel-sep">
+        <p class="panel-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M4 22H2V2h2v20zm18-5H6v-2h16v2zm-4-4H6v-2h12v2zm4-4H6V7h16v2zm-4-4H6V3h12v2z"/>
+          </svg>
+          整列
+        </p>
+        <div id="alignPanel" class="align-panel is-disabled">
+          <div class="align-row">
+            <span class="align-row-label">垂直</span>
+            <div class="align-btns">
+              <button class="align-btn" onclick="alignObjects('left')" title="垂直左揃え">
+                <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
+                  <rect x="0" y="0" width="1.5" height="14"/>
+                  <rect x="2" y="1"  width="6" height="4" rx="0.5"/>
+                  <rect x="2" y="9" width="9" height="4" rx="0.5"/>
+                </svg>
+              </button>
+              <button class="align-btn" onclick="alignObjects('centerH')" title="垂直中央揃え">
+                <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
+                  <rect x="7.25" y="0" width="1.5" height="14"/>
+                  <rect x="3" y="1"  width="10" height="4" rx="0.5"/>
+                  <rect x="4.5" y="9" width="7"  height="4" rx="0.5"/>
+                </svg>
+              </button>
+              <button class="align-btn" onclick="alignObjects('right')" title="垂直右揃え">
+                <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
+                  <rect x="14.5" y="0" width="1.5" height="14"/>
+                  <rect x="8.5" y="1"  width="6" height="4" rx="0.5"/>
+                  <rect x="5.5" y="9" width="9" height="4" rx="0.5"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="align-row">
+            <span class="align-row-label">水平</span>
+            <div class="align-btns">
+              <button class="align-btn" onclick="alignObjects('top')" title="水平上揃え">
+                <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
+                  <rect x="0" y="0" width="16" height="1.5"/>
+                  <rect x="1"  y="2" width="4" height="6" rx="0.5"/>
+                  <rect x="9" y="2" width="4" height="9" rx="0.5"/>
+                </svg>
+              </button>
+              <button class="align-btn" onclick="alignObjects('centerV')" title="水平中央揃え">
+                <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
+                  <rect x="0" y="6.25" width="16" height="1.5"/>
+                  <rect x="1"  y="3.5" width="4" height="7" rx="0.5"/>
+                  <rect x="9" y="2"   width="4" height="10" rx="0.5"/>
+                </svg>
+              </button>
+              <button class="align-btn" onclick="alignObjects('bottom')" title="水平下揃え">
+                <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
+                  <rect x="0" y="12.5" width="16" height="1.5"/>
+                  <rect x="1"  y="6" width="4" height="6.5" rx="0.5"/>
+                  <rect x="9" y="3" width="4" height="9.5" rx="0.5"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
         </div><!-- /#authoringPanels -->
 
       </div><!-- /.inner -->
@@ -1966,6 +2162,13 @@
       document.getElementById('sideDetailSpecificWrap').style.display = 'none';
       _renderGrayedPanel(lastDetailType);
       document.getElementById('sideDetailEmpty').style.display = '';
+      // 選択が解除されたタイミングでバウンディングボックスを即削除
+      updateAlignPanel();
+      // デルタ計算の基準値をクリア
+      applyLiveUpdate._prevX = undefined;
+      applyLiveUpdate._prevY = undefined;
+      applyLiveUpdate._prevW = undefined;
+      applyLiveUpdate._prevH = undefined;
     }
 
     /**
@@ -2563,13 +2766,26 @@
         return;
       }
 
+      // ドラッグ作成：ポップアップなし・マーカー形式で即時作成
       pendingRect = { x, y, w, h };
+      const _specForm = document.getElementById('dialogFormSpecific');
+      if (_specForm) {
+        const _dtEl = _specForm.querySelector('#annDisplayType');
+        if (_dtEl) {
+          _dtEl.value = 'marker';
+        } else {
+          const _inp = document.createElement('input');
+          _inp.type = 'hidden'; _inp.id = 'annDisplayType'; _inp.value = 'marker';
+          _inp.dataset.qcInject = '1';
+          _specForm.appendChild(_inp);
+        }
+      }
       confirmAnnotation(type);
+      if (_specForm) _specForm.querySelectorAll('[data-qc-inject]').forEach(e => e.remove());
     }
 
     /**
      * クリックのみでオブジェクトを作成する際のクイック設定ポップアップを表示する。
-     * 変形（W/H）と塗り色のみ設定可能。
      * @param {string} type     - アノテーション種別
      * @param {number} pageX    - ページ相対X座標（配置位置）
      * @param {number} pageY    - ページ相対Y座標（配置位置）
@@ -2583,15 +2799,8 @@
 
       const cfg      = ANNOTATION_TYPE_CONFIG[type];
       const prevData = lastNewAnnData[type] || {};
-      const defaultW = parseInt(prevData.annWidth,  10) || 120;
-      const defaultH = parseInt(prevData.annHeight, 10) || 40;
 
-      // 塗り色選択肢を生成
-      const colorList    = (type === 'sticky') ? STICKY_COLORS : ANN_COLOR_OPTIONS;
-      const colorOptions = colorList.map((c, i) =>
-        `<option value="${i}"${(prevData.annColor === String(i)) ? ' selected' : ''}>${c.label}</option>`
-      ).join('');
-
+      // ポップアップシェルを生成（フォーム内容は buildCommonFields/buildSpecificFields が埋める）
       const popup = document.createElement('div');
       popup.id        = 'quickCreatePopup';
       popup.className = 'quick-popup dialog-box';
@@ -2601,24 +2810,15 @@
           <span id="qcCloseBtn">×</span>
         </div>
         <div class="dialog-contents">
-          <dl>
-            ${dispTypeRow}
-            <dt class="qc-size-row">変形</dt>
-            <dd class="qc-size-row">
-              <div class="pos-row">
-                <span>幅</span>
-                <div class="pos-field"><input type="number" class="d-input d-input-sm" id="qcWidth"  value="${defaultW}"></div>
-                <span>縦</span>
-                <div class="pos-field"><input type="number" class="d-input d-input-sm" id="qcHeight" value="${defaultH}"></div>
-              </div>
-            </dd>
-            <dt class="qc-size-row">塗り</dt>
-            <dd class="qc-size-row">
-              <div class="d-select-wrap">
-                <select class="d-select" id="qcColor">${colorOptions}</select>
-              </div>
-            </dd>
-          </dl>
+          <div class="side-detail-form" style="margin:0 0 6px;">
+            <dl id="qcFormCommon"></dl>
+          </div>
+          <div id="qcSepWrap" style="display:none">
+            <div class="detail-section-sep" style="margin:6px 0;">種別設定</div>
+            <div class="side-detail-form" style="margin:0;">
+              <dl id="qcFormSpecific"></dl>
+            </div>
+          </div>
         </div>
         <div class="dialog-footer">
           <button class="dialog-btn cancel" id="qcCancelBtn">× キャンセル</button>
@@ -2626,10 +2826,19 @@
         </div>
       `;
 
-      // ポップアップをビューポート内に収まる位置に配置
+      // DOM に追加してからフォームフィールドを生成（ID参照が必要なため）
       document.body.appendChild(popup);
-      const pw   = popup.offsetWidth  || 300;
-      const ph   = popup.offsetHeight || 200;
+
+      buildCommonFields(document.getElementById('qcFormCommon'), type, prevData, null);
+
+      if (type !== 'sticky') {
+        buildSpecificFields(document.getElementById('qcFormSpecific'), type, prevData);
+        document.getElementById('qcSepWrap').style.display = '';
+      }
+
+      // ポップアップをビューポート内に収まる位置に配置
+      const pw   = popup.offsetWidth  || 310;
+      const ph   = popup.offsetHeight || 260;
       const left = Math.min(clientX + 8, window.innerWidth  - pw - 8);
       const top  = Math.min(clientY + 8, window.innerHeight - ph - 8);
       popup.style.left = Math.max(8, left) + 'px';
@@ -2640,23 +2849,7 @@
       document.getElementById('qcCancelBtn').onclick = closeQuickCreateDialog;
       document.getElementById('qcCloseBtn').onclick  = closeQuickCreateDialog;
 
-      // 表示タイプ切替時に変形・塗り行の表示を切替する
-      if (type !== 'sticky') {
-        const toggleSizeColor = (isIcon) => {
-          popup.querySelectorAll('.qc-size-row').forEach(el => el.style.display = isIcon ? 'none' : '');
-        };
-        toggleSizeColor(iconSelected);
-        popup.querySelectorAll('input[name="qcDispType"]').forEach(radio => {
-          radio.addEventListener('change', () => {
-            const isIcon = radio.value === 'icon';
-            popup.querySelector('#qcDtMarker').classList.toggle('is-active', !isIcon);
-            popup.querySelector('#qcDtIcon').classList.toggle('is-active',    isIcon);
-            toggleSizeColor(isIcon);
-          });
-        });
-      }
-
-      updateStatus(`${cfg.label}の変形と塗りを設定して「作成」を押してください`);
+      updateStatus(`${cfg.label}を設定して「作成」を押してください`);
     }
 
     /**
@@ -2676,51 +2869,41 @@
      * @param {number} pageY - ページ相対Y座標
      */
     function confirmQuickCreate(type, pageX, pageY) {
-      const w        = Math.max(parseInt(document.getElementById('qcWidth')?.value,  10) || 120, 10);
-      const h        = Math.max(parseInt(document.getElementById('qcHeight')?.value, 10) || 40,  10);
-      const colorIdx = document.getElementById('qcColor')?.value || '0';
-      const dispType = document.querySelector('input[name="qcDispType"]:checked')?.value || 'marker';
+      // ポップアップフォームから値を収集し、サイドバーの共通/種別固有フォームに転写する
+      ['qcFormCommon', 'qcFormSpecific'].forEach((srcId, i) => {
+        const src  = document.getElementById(srcId);
+        const dest = document.getElementById(['dialogFormCommon', 'dialogFormSpecific'][i]);
+        if (!src || !dest) return;
+        src.querySelectorAll('input[id], select[id], textarea[id]').forEach(srcEl => {
+          // 封到済みの要素があれば値を上書き、なければ hidden input を挿入
+          const destEl = dest.querySelector(`[id="${srcEl.id}"]`);
+          if (destEl) {
+            destEl.value = srcEl.value;
+          } else {
+            const inp = document.createElement('input');
+            inp.type = 'hidden'; inp.id = srcEl.id; inp.value = srcEl.value;
+            inp.dataset.qcInject = '1';
+            dest.appendChild(inp);
+          }
+        });
+      });
+
+      const qcCommon = document.getElementById('qcFormCommon');
+      const w = Math.max(parseFloat(qcCommon?.querySelector('[id="annWidth"]')?.value)  || 120, 10);
+      const h = Math.max(parseFloat(qcCommon?.querySelector('[id="annHeight"]')?.value) || 40,  10);
       closeQuickCreateDialog();
 
       // クリック位置をオブジェクトの中央にして配置
       pendingRect = { x: pageX - w / 2, y: pageY - h / 2, w, h };
-
-      // confirmAnnotation が読むフォームに値を注入する
-      const injectValues = (formId, values) => {
-        const form = document.getElementById(formId);
-        if (!form) return;
-        form.querySelectorAll('[data-qc-inject]').forEach(e => e.remove());
-        Object.entries(values).forEach(([id, val]) => {
-          const existing = document.getElementById(id);
-          if (existing) { existing.value = val; return; }
-          const inp = document.createElement('input');
-          inp.type = 'hidden'; inp.id = id; inp.value = val;
-          inp.dataset.qcInject = '1';
-          form.appendChild(inp);
-        });
-      };
-      injectValues('dialogFormCommon',   { annWidth: w, annHeight: h, annColor: colorIdx });
-      injectValues('dialogFormSpecific', { annDisplayType: dispType });
-
       confirmAnnotation(type);
+
+      // 注入した hidden input を二次防止のため後片付けで削除
+      ['dialogFormCommon', 'dialogFormSpecific'].forEach(id => {
+        const form = document.getElementById(id);
+        if (form) form.querySelectorAll('[data-qc-inject]').forEach(e => e.remove());
+      });
     }
 
-    /**
-     * 非克 sticky アノテーション種別のダイアログフォームを構築する。
-     * 表示タイプ（アイコン/マーカー）・位置座標・サイズ・塗り色・種別固有フィールドを生成する。
-     * @param {HTMLElement} form       - 挿入先の dl 要素
-     * @param {string}      type       - アノテーション種別
-     * @param {Object}      savedData  - 既存の保存値（プリフィル用）
-     * @param {Object|null} initRect   - 新規作成時のドラッグ矩形 {x,y,w,h}
-     */
-    /**
-     * 共通セクション（位置座標・長さ・塗り色）を指定フォームに生成する。
-     * 非sticky 5種別・付箋共通で使用する。
-     * @param {HTMLElement} form       - 追加先の dl 要素
-     * @param {string}      type       - アノテーション種別
-     * @param {object}      savedData  - 保存済みデータ
-     * @param {object|null} initRect   - ドラッグで確定した pendingRect（新規作成時のみ）
-     */
     /**
      * スピンボタン付き数値入力フィールド（.pos-field）を生成する。
      * スピンボタンは入力窓の左側に縦並びで配置し、入力窓と同じ背景色を使用する。
@@ -2831,35 +3014,71 @@
      * @param {string} type - アノテーション種別
      */
     function applyLiveUpdate(type) {
-      // 選択中オブジェクトを特定（ann または 単一付箋）
-      const target = selectedAnnotation
-        || (selectedStickySet.size === 1 ? [...selectedStickySet][0] : null);
-      if (!target) return;
+      const allTargets = getSelectedObjects();
+      if (allTargets.length === 0) return;
 
-      const x = parseFloat(document.getElementById('annPosX')?.value)  || 0;
-      const y = parseFloat(document.getElementById('annPosY')?.value)  || 0;
+      const x = parseFloat(document.getElementById('annPosX')?.value)  ?? 0;
+      const y = parseFloat(document.getElementById('annPosY')?.value)  ?? 0;
       const w = parseFloat(document.getElementById('annWidth')?.value)  || 0;
       const h = parseFloat(document.getElementById('annHeight')?.value) || 0;
       const colorIdx = parseInt(document.getElementById('annColor')?.value || '0', 10);
 
-      // 位置は全種別共通で即時適用
-      target.style.left = x + 'px';
-      target.style.top  = y + 'px';
+      if (allTargets.length === 1) {
+        // 単一選択：絶対値で位置・サイズ・色を適用
+        const target = allTargets[0];
+        target.style.left = x + 'px';
+        target.style.top  = y + 'px';
+        if (type === 'sticky') {
+          const color = STICKY_COLOR_MAP[colorIdx] ?? STICKY_COLOR_MAP[0];
+          if (w > 0) target.style.width  = w + 'px';
+          if (h > 0) target.style.height = h + 'px';
+          target.style.background = color;
+        } else if (!target.classList.contains('ann-icon-obj')) {
+          const bgColor = ANN_COLOR_OPTIONS[colorIdx]?.value ?? '#aaa';
+          if (w > 0) target.style.width  = w + 'px';
+          if (h > 0) target.style.height = h + 'px';
+          target.style.background = bgColor;
+        }
+      } else {
+        // 複数選択：位置・サイズはデルタで全対象に適用し個々の状態を保持、塗り色は絶対値で適用
+        const prevX = applyLiveUpdate._prevX ?? x;
+        const prevY = applyLiveUpdate._prevY ?? y;
+        const prevW = applyLiveUpdate._prevW ?? w;
+        const prevH = applyLiveUpdate._prevH ?? h;
+        const dx = x - prevX;
+        const dy = y - prevY;
+        const dw = w - prevW;
+        const dh = h - prevH;
 
-      if (type === 'sticky') {
-        // 付箋：サイズ・背景色を更新
-        const color = STICKY_COLOR_MAP[colorIdx] ?? STICKY_COLOR_MAP[0];
-        if (w > 0) target.style.width  = w + 'px';
-        if (h > 0) target.style.height = h + 'px';
-        target.style.background = color;
-      } else if (!target.classList.contains('ann-icon-obj')) {
-        // マーカー型アノテーション：サイズ・背景色を更新
-        const bgColor = ANN_COLOR_OPTIONS[colorIdx]?.value ?? '#aaa';
-        if (w > 0) target.style.width  = w + 'px';
-        if (h > 0) target.style.height = h + 'px';
-        target.style.background = bgColor;
+        allTargets.forEach(target => {
+          // 位置をデルタ分移動
+          if (dx !== 0) target.style.left = (parseFloat(target.style.left) || 0) + dx + 'px';
+          if (dy !== 0) target.style.top  = (parseFloat(target.style.top)  || 0) + dy + 'px';
+
+          const isSticky = target.classList.contains('sticky-note');
+          if (isSticky) {
+            // 付箋：サイズをデルタ分変更（最小10px）、塗り色は絶対値適用
+            const color = STICKY_COLOR_MAP[colorIdx] ?? STICKY_COLOR_MAP[0];
+            if (dw !== 0) target.style.width  = Math.max(10, (parseFloat(target.style.width)  || 0) + dw) + 'px';
+            if (dh !== 0) target.style.height = Math.max(10, (parseFloat(target.style.height) || 0) + dh) + 'px';
+            target.style.background = color;
+          } else if (!target.classList.contains('ann-icon-obj')) {
+            // マーカー型：サイズをデルタ分変更（最小10px）、塗り色は絶対値適用
+            const bgColor = ANN_COLOR_OPTIONS[colorIdx]?.value ?? '#aaa';
+            if (dw !== 0) target.style.width  = Math.max(10, (parseFloat(target.style.width)  || 0) + dw) + 'px';
+            if (dh !== 0) target.style.height = Math.max(10, (parseFloat(target.style.height) || 0) + dh) + 'px';
+            target.style.background = bgColor;
+          }
+        });
+
+        // バウンディングボックスを再描画
+        updateAlignPanel();
       }
-      // アイコン型は位置のみ反映（サイズ・色は固定）
+      // 次回デルタ計算のために現在値を保持
+      applyLiveUpdate._prevX = x;
+      applyLiveUpdate._prevY = y;
+      applyLiveUpdate._prevW = w;
+      applyLiveUpdate._prevH = h;
     }
 
     /**
@@ -2916,7 +3135,8 @@
       `;
       dtDd.querySelectorAll('input[name="annDisplayTypeRadio"]').forEach(radio => {
         radio.addEventListener('change', () => {
-          document.getElementById('annDisplayType').value = radio.value;
+          // dtDd スコープで検索することでポップアップとサイドバーの ID 競合を防ぐ
+          dtDd.querySelector('#annDisplayType').value = radio.value;
           dtDd.querySelector('#dtOpt-icon').classList.toggle('is-active',   radio.value === 'icon');
           dtDd.querySelector('#dtOpt-marker').classList.toggle('is-active', radio.value === 'marker');
         });
@@ -3059,6 +3279,11 @@
      */
     function openAnnotationSettingsDialog(type, existingEl = null) {
       lastDetailType = type;  // 最後に表示した種別を履歴保持
+      // デルタ計算の基準値をリセット（新たな選択に備える）
+      applyLiveUpdate._prevX = undefined;
+      applyLiveUpdate._prevY = undefined;
+      applyLiveUpdate._prevW = undefined;
+      applyLiveUpdate._prevH = undefined;
       const cfg = ANNOTATION_TYPE_CONFIG[type];
       document.getElementById('dialogTitle').textContent = cfg.label + '設定';
 
@@ -3194,11 +3419,11 @@
         const displayType = savedData.annDisplayType || 'marker';
         const colorIdx    = parseInt(savedData.annColor || '0', 10);
         const bgColor     = ANN_COLOR_OPTIONS[colorIdx]?.value ?? cfg.color;
-        // 位置・サイズはフォームフィールドから読む（新規 & 再設定共通）
-        const x = parseFloat(savedData.annPosX)   || (pendingRect?.x ?? 0);
-        const y = parseFloat(savedData.annPosY)   || (pendingRect?.y ?? 0);
-        const w = parseFloat(savedData.annWidth)  || (pendingRect?.w ?? 100);
-        const h = parseFloat(savedData.annHeight) || (pendingRect?.h ?? 100);
+        // 新規作成時は pendingRect のドラッグ寸法を優先し、更新時はフォーム値を使用する
+        const x = isUpdate ? (parseFloat(savedData.annPosX)   || 0)   : (pendingRect?.x ?? parseFloat(savedData.annPosX)   ?? 0);
+        const y = isUpdate ? (parseFloat(savedData.annPosY)   || 0)   : (pendingRect?.y ?? parseFloat(savedData.annPosY)   ?? 0);
+        const w = isUpdate ? (parseFloat(savedData.annWidth)  || 100) : (pendingRect?.w ?? parseFloat(savedData.annWidth)  ?? 100);
+        const h = isUpdate ? (parseFloat(savedData.annHeight) || 100) : (pendingRect?.h ?? parseFloat(savedData.annHeight) ?? 100);
         const label = (savedData.annLabel || '').trim() || cfg.label;
 
         if (isUpdate) {
@@ -3299,15 +3524,14 @@
             }
             updateStatus(`付箋を ${selectedStickySet.size} 件選択中`);
           } else {
-            // シングルクリック：未選択のみ選択してパネルを開く（選択済みは何もしない）
-            if (!selectedStickySet.has(note)) {
-              selectedStickySet.forEach(n => n.classList.remove('is-selected'));
-              selectedStickySet.clear();
-              selectedStickySet.add(note);
-              note.classList.add('is-selected');
-              openAnnotationSettingsDialog('sticky', note);
-              updateStatus('付箋を選択中');
-            }
+            // シングルクリック：他の選択をすべて解除してこの付箋のみ選択
+            selectedStickySet.forEach(n => n.classList.remove('is-selected'));
+            selectedStickySet.clear();
+            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected').forEach(a => a.classList.remove('is-selected'));
+            selectedStickySet.add(note);
+            note.classList.add('is-selected');
+            openAnnotationSettingsDialog('sticky', note);
+            updateStatus('付箋を選択中');
           }
           return;
         }
@@ -3356,13 +3580,13 @@
                       + selectedStickySet.size;
           updateStatus(`${count} 件のオブジェクトを選択中`);
         } else {
-          // 通常クリック：未選択のみ選択してパネルを開く（選択済みは何もしない）
-          if (!ann.classList.contains('is-selected')) {
-            document.querySelectorAll('.ann-object, .ann-icon-obj').forEach(a => a.classList.remove('is-selected'));
-            ann.classList.add('is-selected');
-            openAnnotationSettingsDialog(type, ann);
-            updateStatus(`${cfg?.label ?? type}を選択中`);
-          }
+          // 通常クリック：他の選択をすべて解除してこの要素のみ選択
+          selectedStickySet.forEach(n => n.classList.remove('is-selected'));
+          selectedStickySet.clear();
+          document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected').forEach(a => a.classList.remove('is-selected'));
+          ann.classList.add('is-selected');
+          openAnnotationSettingsDialog(type, ann);
+          updateStatus(`${cfg?.label ?? type}を選択中`);
         }
       });
     }
@@ -3497,9 +3721,79 @@
         e.preventDefault();
         e.stopPropagation();
 
+        // 複数選択中の Alt+ドラッグ：全選択オブジェクトをまとめてコピー
+        const selectedAll      = getSelectedObjects();
+        const isInMultiSel     = selectedAll.length > 1 && selectedAll.includes(el);
+
+        if (e.altKey && isInMultiSel) {
+          // 全選択オブジェクトをクローン（各オブジェクトの開始位置も記録）
+          const clones = selectedAll.map(orig => {
+            const clone = orig.cloneNode(true);
+            clone.dataset.id = ++annIdCounter;
+            clone.classList.remove('is-selected');
+            orig.parentNode.appendChild(clone);
+            makeDraggable(clone, excludeSelector);
+            reinitElement(clone);
+            return {
+              clone,
+              startLeft: parseInt(orig.style.left, 10) || 0,
+              startTop:  parseInt(orig.style.top,  10) || 0
+            };
+          });
+
+          const startX = e.clientX;
+          const startY = e.clientY;
+
+          // Shift 制約状態
+          let axis2 = null, prevShift2 = false;
+          let shiftSnapX2 = null, shiftSnapY2 = null;
+          let frozenDx2   = null, frozenDy2   = null;
+
+          const onMoveMulti = (ev) => {
+            let dx = ev.clientX - startX;
+            let dy = ev.clientY - startY;
+
+            if (ev.shiftKey) {
+              if (!prevShift2) {
+                shiftSnapX2 = ev.clientX; shiftSnapY2 = ev.clientY;
+                frozenDx2   = dx;         frozenDy2   = dy;
+                axis2       = null;
+              }
+              const ddx = ev.clientX - shiftSnapX2;
+              const ddy = ev.clientY - shiftSnapY2;
+              if (axis2 === null && (Math.abs(ddx) > 3 || Math.abs(ddy) > 3)) {
+                axis2 = Math.abs(ddx) >= Math.abs(ddy) ? 'h' : 'v';
+              }
+              if (axis2 === 'h') dy = frozenDy2;
+              if (axis2 === 'v') dx = frozenDx2;
+            } else {
+              axis2 = null;
+              shiftSnapX2 = shiftSnapY2 = frozenDx2 = frozenDy2 = null;
+            }
+            prevShift2 = ev.shiftKey;
+
+            // 全クローンに同じデルタを適用
+            clones.forEach(({ clone, startLeft, startTop }) => {
+              clone.style.left = (startLeft + dx) + 'px';
+              clone.style.top  = (startTop  + dy) + 'px';
+            });
+            updateAlignPanel();
+          };
+          const onUpMulti = () => {
+            document.removeEventListener('mousemove', onMoveMulti);
+            document.removeEventListener('mouseup',   onUpMulti);
+            updateAlignPanel();
+          };
+          document.addEventListener('mousemove', onMoveMulti);
+          document.addEventListener('mouseup',   onUpMulti);
+
+          updateStatus(`Alt+ドラッグ：${selectedAll.length} 件のオブジェクトをコピーしました`);
+          return;
+        }
+
         let target = el;
 
-        // Alt+ドラッグ：クローンを作成してドラッグ（オリジナルは元の位置に残る）
+        // Alt+ドラッグ（単体）：クローンを作成してドラッグ（オリジナルは元の位置に残る）
         if (e.altKey) {
           const clone = el.cloneNode(true);
           clone.dataset.id = ++annIdCounter;
@@ -3790,11 +4084,111 @@
      * ステータスバーの選択表示を更新する。
      * @param {string} msg - 表示するメッセージ
      */
+    /**
+     * 現在選択中の全オブジェクト（付箋 + 非sticky）を配列で返す。
+     * @returns {HTMLElement[]}
+     */
+    function getSelectedObjects() {
+      const result = [];
+      selectedStickySet.forEach(n => result.push(n));
+      document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected').forEach(a => result.push(a));
+      return result;
+    }
+
+    /**
+     * 選択数に応じて整列パネルの有効/グレーアウトを切り替え、
+     * 複数選択時は外接バウンディングボックスを #pageLeft 上に描画する。
+     * 選択が2件未満の場合はボックスを削除する。
+     */
+    function updateAlignPanel() {
+      const panel = document.getElementById('alignPanel');
+      if (!panel) return;
+      const els = getSelectedObjects();
+      const count = els.length;
+      panel.classList.toggle('is-disabled', count < 2);
+
+      const existing = document.getElementById('selectionBoundingBox');
+      if (count < 2) {
+        if (existing) existing.remove();
+        return;
+      }
+
+      // 外接バウンディングボックスを算出して描画
+      const pageEl     = document.getElementById('pageLeft');
+      const pageOrigin = pageEl.getBoundingClientRect();
+      const rects = els.map(el => {
+        const cr = el.getBoundingClientRect();
+        return {
+          l: cr.left  - pageOrigin.left,
+          t: cr.top   - pageOrigin.top,
+          r: cr.right - pageOrigin.left,
+          b: cr.bottom - pageOrigin.top,
+        };
+      });
+      const minL = Math.min(...rects.map(r => r.l));
+      const minT = Math.min(...rects.map(r => r.t));
+      const maxR = Math.max(...rects.map(r => r.r));
+      const maxB = Math.max(...rects.map(r => r.b));
+
+      const box = existing || document.createElement('div');
+      box.id = 'selectionBoundingBox';
+      box.style.left   = minL + 'px';
+      box.style.top    = minT + 'px';
+      box.style.width  = (maxR - minL) + 'px';
+      box.style.height = (maxB - minT) + 'px';
+      if (!existing) pageEl.appendChild(box);
+    }
+
+    /**
+     * 選択中のオブジェクトを指定モードで整列する。
+     * @param {'left'|'centerH'|'right'|'top'|'centerV'|'bottom'} mode
+     */
+    function alignObjects(mode) {
+      const els = getSelectedObjects();
+      if (els.length < 2) return;
+
+      // #pageLeft を基準にした実描画座標で外接バウンディングボックスを算出する
+      const pageOrigin = document.getElementById('pageLeft').getBoundingClientRect();
+      const rects = els.map(el => {
+        const cr = el.getBoundingClientRect();
+        const l = cr.left   - pageOrigin.left;
+        const t = cr.top    - pageOrigin.top;
+        const w = cr.width;
+        const h = cr.height;
+        return { el, l, t, w, h };
+      });
+
+      // 外接バウンディングボックス（全オブジェクトを包含する最小矩形）
+      const minL   = Math.min(...rects.map(r => r.l));
+      const maxR   = Math.max(...rects.map(r => r.l + r.w));
+      const minT   = Math.min(...rects.map(r => r.t));
+      const maxB   = Math.max(...rects.map(r => r.t + r.h));
+      const centerX = (minL + maxR) / 2;
+      const centerY = (minT + maxB) / 2;
+
+      rects.forEach(({ el, l, t, w, h }) => {
+        switch (mode) {
+          case 'left':    el.style.left = minL + 'px';               break;
+          case 'centerH': el.style.left = (centerX - w / 2) + 'px'; break;
+          case 'right':   el.style.left = (maxR - w) + 'px';        break;
+          case 'top':     el.style.top  = minT + 'px';               break;
+          case 'centerV': el.style.top  = (centerY - h / 2) + 'px'; break;
+          case 'bottom':  el.style.top  = (maxB - h) + 'px';        break;
+        }
+      });
+
+      const labelMap = { left:'垂直左揃え', centerH:'垂直中央揃え', right:'垂直右揃え',
+                         top:'水平上揃え',  centerV:'水平中央揃え',  bottom:'水平下揃え' };
+      updateStatus(`${labelMap[mode]}を実行しました（${els.length}件）`);
+    }
+
     function updateStatus(msg) {
       const el = document.getElementById('statusSelected');
       el.textContent = msg;
       clearTimeout(el._timer);
       el._timer = setTimeout(() => { el.textContent = ''; }, 3000);
+      // 選択数に応じて整列パネルの活性状態を更新
+      updateAlignPanel();
     }
 
     /* ============================
