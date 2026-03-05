@@ -763,23 +763,44 @@
     }
 
     .side-detail-form dl {
-      display: block;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 0;
       font-size: 12px;
       font-weight: 700;
     }
 
     .side-detail-form dl dt {
-      width: auto;
+      width: 40px;
       color: #aab;
+      display: flex;
+      align-items: center;
+      padding-right: 4px;
+    }
+
+    .side-detail-form dl dd {
+      width: calc(100% - 40px);
+    }
+
+    /* 種別固有フォームのみラベルを上部・縦積みレイアウト */
+    #dialogFormSpecific {
+      display: block;
+    }
+
+    #dialogFormSpecific dt {
+      width: auto;
+      display: block;
+      align-items: unset;
+      padding-right: 0;
       margin-top: 10px;
       margin-bottom: 4px;
     }
 
-    .side-detail-form dl dt:first-child {
+    #dialogFormSpecific dt:first-child {
       margin-top: 0;
     }
 
-    .side-detail-form dl dd {
+    #dialogFormSpecific dd {
       width: auto;
     }
 
