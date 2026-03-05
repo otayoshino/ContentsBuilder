@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -51,6 +51,36 @@
       user-select: none;
       position: relative;
       z-index: 10;
+      overflow: hidden;
+      transition: height 0.2s ease;
+    }
+
+    /* ナビ折りたたみ時 */
+    .nav.is-hidden {
+      height: 0;
+    }
+
+    /* ナビ非表示時に右上に浮かぶ展開ボタン */
+    #navRevealBtn {
+      display: none;
+      position: fixed;
+      top: 0;
+      right: 0;
+      z-index: 200;
+      width: 32px;
+      height: 26px;
+      align-items: center;
+      justify-content: center;
+      background: #647cc0;
+      color: #fff;
+      border-radius: 0 0 0 6px;
+      cursor: pointer;
+      border: none;
+      opacity: 0.85;
+      transition: opacity 0.15s;
+    }
+    #navRevealBtn:hover {
+      opacity: 1;
     }
 
     /* サイドバーラベルブロック */
@@ -1708,6 +1738,13 @@
     </div>
 
   </nav>
+
+  <!-- ナビ折りたたみ時のヘッダー展開ボタン -->
+  <button id="navRevealBtn" title="ヘッダーを表示" onclick="toggleNav()">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/>
+    </svg>
+  </button>
 
   <!-- ===========================
        メインエリア
@@ -4159,8 +4196,17 @@
      * ナビゲーションバーの表示切替。
      */
     function toggleNav() {
-      // モック用：トグルのみ
-      updateStatus('ナビ操作');
+      // ヘッダーの表示/非表示をトグルする
+      const nav = document.querySelector('.nav');
+      const revealBtn = document.getElementById('navRevealBtn');
+      const toggleBtn = nav.querySelector('[onclick="toggleNav()"]');
+      const isHidden = nav.classList.toggle('is-hidden');
+
+      // 展開ボタンの表示切替
+      if (revealBtn) revealBtn.style.display = isHidden ? 'flex' : 'none';
+
+      // ナビ内ボタンのツールチップ更新
+      if (toggleBtn) toggleBtn.dataset.tip = isHidden ? 'ナビを展開する' : 'ナビを折りたたむ';
     }
 
     /* ============================
