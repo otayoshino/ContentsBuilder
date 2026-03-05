@@ -262,7 +262,7 @@
       justify-content: center;
       width: 100%;
       height: 32px;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
       border-radius: 5px;
       font-size: 13px;
       font-weight: 700;
@@ -300,8 +300,8 @@
       color: #fff;
       font-size: 13px;
       font-weight: 700;
-      margin-top: 12px;
-      margin-bottom: 8px;
+      margin-top: 8px;
+      margin-bottom: 5px;
     }
     /* 最初のパネルタイトルは上マージン不要 */
     .side .panel-title:first-of-type {
@@ -313,8 +313,8 @@
       list-style: none;
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 12px;
+      gap: 8px;
+      margin-bottom: 8px;
     }
 
     .side .panel ul li {
@@ -322,8 +322,8 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      width: calc(50% - 6px);
-      height: 64px;
+      width: calc(50% - 4px);
+      height: 56px;
       background: #e6e6e6;
       border-radius: 6px;
       cursor: pointer;
@@ -1879,32 +1879,14 @@
               </div>
               <p class="size_s">付箋（コピー）</p>
             </li>
-            <!-- 付箋一括設定 -->
-            <li onclick="openBulkStickyDialog()" data-tip="付箋を一括設定">
-              <div>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
-                </svg>
-              </div>
-              <p class="size_s">付箋一括設定</p>
-            </li>
-            <!-- 付箋グループ化 -->
-            <li onclick="groupStickyNotes()" data-tip="付箋をグループ化">
+            <!-- 付箋グループ切替 -->
+            <li onclick="toggleStickyGroup()" data-tip="付箋のグループ化／解除を切替">
               <div>
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M20 6h-2.18c.07-.44.18-.88.18-1.33C18 2.54 15.96.5 13.67.5c-1.31 0-2.4.56-3.33 1.45L9 3.28 7.67 1.95C6.74 1.06 5.65.5 4.33.5 2.04.5 0 2.54 0 4.67c0 .46.1.9.18 1.33H0v2h20V6zM9 6H2.5C2.22 4.84 3.18 2.5 4.33 2.5c.73 0 1.36.4 1.85.9L9 6zm11 0h-6.5l2.82-2.6c.49-.5 1.12-.9 1.85-.9 1.15 0 2.11 2.34 1.83 3.5zM0 19c0 1.1.9 2 2 2h8v3l3-3h5l2-2V8H0v11zm12-9l3 3-3 3v-2H6v-2h6v-2z"/>
                 </svg>
               </div>
-              <p class="size_s">付箋グループ化</p>
-            </li>
-            <!-- 付箋グループ解除 -->
-            <li onclick="ungroupStickyNotes()" data-tip="付箋のグループを解除">
-              <div>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20 6h-2.18c.07-.44.18-.88.18-1.33C18 2.54 15.96.5 13.67.5c-1.31 0-2.4.56-3.33 1.45L9 3.28 7.67 1.95C6.74 1.06 5.65.5 4.33.5 2.04.5 0 2.54 0 4.67c0 .46.1.9.18 1.33H0v2h20V6zM9 6H2.5C2.22 4.84 3.18 2.5 4.33 2.5c.73 0 1.36.4 1.85.9L9 6zm11 0h-6.5l2.82-2.6c.49-.5 1.12-.9 1.85-.9 1.15 0 2.11 2.34 1.83 3.5zM0 19c0 1.1.9 2 2 2h8v3l3-3h5l2-2V8H0v11zm6-4h6v2H6v-2z"/>
-                </svg>
-              </div>
-              <p class="size_s">グループ解除</p>
+              <p class="size_s">付箋グループ切替</p>
             </li>
           </ul>
         </div>
@@ -2614,6 +2596,33 @@
         showToast('選択中の付箋はグループ化されていません。');
       } else {
         updateStatus(`${count} 件の付箋のグループを解除しました`);
+      }
+    }
+
+    /**
+     * 選択中の付箋のグループ化状態をトグルする。
+     * 全員グループ済み → 解除、それ以外 → グループ化（2件以上必要）。
+     */
+    function toggleStickyGroup() {
+      if (selectedStickySet.size === 0) {
+        showToast('付箋を選択してください。');
+        return;
+      }
+      // 全選択付箋がグループ化済みかを判定
+      const allGrouped = [...selectedStickySet].every(n => n.dataset.groupId);
+      if (allGrouped) {
+        // 全員グループ済み → 解除
+        selectedStickySet.forEach(note => { delete note.dataset.groupId; });
+        updateStatus(`${selectedStickySet.size} 件の付箋のグループを解除しました`);
+      } else {
+        // 未グループのものがある → グループ化
+        if (selectedStickySet.size < 2) {
+          showToast('2つ以上の付箋を選択してグループ化してください。');
+          return;
+        }
+        const gid = `grp-${++stickyGroupCounter}`;
+        selectedStickySet.forEach(note => { note.dataset.groupId = gid; });
+        updateStatus(`${selectedStickySet.size} 件の付箋をグループ化しました（${gid}）`);
       }
     }
 
