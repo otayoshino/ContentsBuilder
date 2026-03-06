@@ -1000,34 +1000,6 @@
     }
 
     /* ============================
-       状態表示バー（下部）
-    ============================ */
-    .status-bar {
-      height: 24px;
-      background: #252a33;
-      display: flex;
-      align-items: center;
-      padding: 0 12px;
-      gap: 16px;
-      font-size: 11px;
-      color: #888;
-      flex-shrink: 0;
-    }
-
-    .status-bar .status-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .status-bar .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #5c9;
-    }
-
-    /* ============================
        ツールチップ
     ============================ */
     [data-tip] {
@@ -1177,6 +1149,7 @@
     .ann-object.is-selected {
       outline: 2px solid #4488ff;
       z-index: 20;
+      overflow: visible;
     }
 
     /* リサイズハンドル（非アイコン型オブジェクトの選択時に四隅に表示） */
@@ -2089,24 +2062,6 @@
 
   </div><!-- /.main -->
 
-  <!-- ===========================
-       ステータスバー
-  =========================== -->
-  <div class="status-bar">
-    <div class="status-item">
-      <span class="dot"></span>
-      <span>オーサリングモード</span>
-    </div>
-    <div class="status-item">
-      <span>ページ: <strong id="statusPage">1</strong> / 144</span>
-    </div>
-    <div class="status-item" id="statusZoom">
-      <span>表示倍率: <strong>100%</strong></span>
-    </div>
-    <div class="status-item" id="statusSelected" style="margin-left:auto; color:#5c9;">
-    </div>
-  </div>
-
   <!-- 画面中央トースト -->
   <div class="toast-overlay">
     <div class="toast-msg" id="toastMsg"></div>
@@ -2753,7 +2708,9 @@
         return;
       }
 
-      // 別ボタンへ切り替え：オブジェクト選択はページ操作まで維持する
+      // 別ボタンへ切り替え：選択中オブジェクトを解除してから切り替える
+      deselectAllObjects();
+      closeDialog();
 
       // 前回のアクティブボタンのハイライトを解除
       document.querySelectorAll('li[data-ann-type]').forEach(li => li.classList.remove('is-ann-active'));
@@ -4263,7 +4220,6 @@
      */
     function updatePageDisplay() {
       document.getElementById('pageInput').value = currentPage;
-      document.getElementById('statusPage').textContent = currentPage;
 
       // ページ番号テキスト更新
       document.getElementById('pageLeft').querySelector('.page-content').textContent = 'P.' + currentPage;
@@ -4342,8 +4298,6 @@
         page.style.width  = w + 'px';
         page.style.height = h + 'px';
       }
-
-      document.querySelector('#statusZoom strong').textContent = zoomLevel + '%';
     }
 
     /**
@@ -4653,10 +4607,6 @@
     }
 
     function updateStatus(msg) {
-      const el = document.getElementById('statusSelected');
-      el.textContent = msg;
-      clearTimeout(el._timer);
-      el._timer = setTimeout(() => { el.textContent = ''; }, 3000);
       // 選択数に応じて整列パネルの活性状態を更新
       updateAlignPanel();
     }
