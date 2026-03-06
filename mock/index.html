@@ -380,7 +380,9 @@
 
     /* パネルセパレータ（非表示） */
     .side .panel-sep {
-      display: none;
+      border: none;
+      border-top: 1px solid #3a3f4a;
+      margin: 8px 0;
     }
 
     /* ============================
@@ -740,6 +742,16 @@
       line-height: 1.7;
     }
 
+    /* 詳細設定パネル：活性/非活性切替時にレイアウトが動かないようグリッドで重ね配置 */
+    #sideDetailPanel {
+      display: grid;
+    }
+    #sideDetailEmpty,
+    #sideDetailActive {
+      grid-row: 1;
+      grid-column: 1;
+    }
+
     .side-detail-empty {
       text-align: center;
       padding: 20px 8px;
@@ -858,6 +870,11 @@
 
     .side-detail-form .dialog-btn:focus {
       outline: none;
+    }
+
+    /* サイドバー内フッターはボタンが常時非表示のため高さを持たせない */
+    #sideDetailActive .side-detail-footer {
+      display: none;
     }
 
     .side-detail-footer {
@@ -1175,10 +1192,14 @@
       box-sizing: border-box;
     }
     body:not(.is-view-mode) .is-selected > .resize-handle { display: block; }
-    .resize-handle[data-corner="tl"] { top: -5px;    left: -5px;   cursor: nw-resize; }
-    .resize-handle[data-corner="tr"] { top: -5px;    right: -5px;  cursor: ne-resize; }
-    .resize-handle[data-corner="bl"] { bottom: -5px; left: -5px;   cursor: sw-resize; }
-    .resize-handle[data-corner="br"] { bottom: -5px; right: -5px;  cursor: se-resize; }
+    .resize-handle[data-corner="tl"] { top: -5px;               left: -5px;              cursor: nw-resize; }
+    .resize-handle[data-corner="tc"] { top: -5px;               left: calc(50% - 4px);   cursor: n-resize;  }
+    .resize-handle[data-corner="tr"] { top: -5px;               right: -5px;             cursor: ne-resize; }
+    .resize-handle[data-corner="ml"] { top: calc(50% - 4px);    left: -5px;              cursor: w-resize;  }
+    .resize-handle[data-corner="mr"] { top: calc(50% - 4px);    right: -5px;             cursor: e-resize;  }
+    .resize-handle[data-corner="bl"] { bottom: -5px;            left: -5px;              cursor: sw-resize; }
+    .resize-handle[data-corner="bc"] { bottom: -5px;            left: calc(50% - 4px);   cursor: s-resize;  }
+    .resize-handle[data-corner="br"] { bottom: -5px;            right: -5px;             cursor: se-resize; }
 
     /* アイコン型アノテーションオブジェクト（ページ上配置） */
     .ann-icon-obj {
@@ -1380,7 +1401,7 @@
     .quick-popup {
       position: fixed;
       z-index: 9000;
-      width: 310px;
+      width: 460px;
       border-radius: 5px;
       overflow: hidden;
       box-shadow: 0 8px 40px rgba(0,0,0,0.6);
@@ -1471,6 +1492,18 @@
     }
     .quick-popup .radio-row label {
       color: #444;
+    }
+    /* サイドバーの暗色テーマを popup 内で上書き */
+    .quick-popup .side-detail-form .radio-row label {
+      color: #333;
+    }
+    .quick-popup .side-detail-form dl dt {
+      color: #444;
+      width: 90px;
+      white-space: nowrap;
+    }
+    .quick-popup .side-detail-form dl dd {
+      width: calc(100% - 90px);
     }
 
     /* 汎用ラジオ行（表示方法・再生方法など） */
@@ -1570,6 +1603,17 @@
       border: 2px dashed rgba(104,152,216,0.8);
       background: transparent;
       z-index: 900;
+      overflow: visible;
+    }
+
+    /* 複数選択時は個々のオブジェクトのリサイズハンドルを非表示 */
+    body.is-multi-select .is-selected > .resize-handle { display: none; }
+
+    /* バウンディングボックスのリサイズハンドル（編集モードのみ表示） */
+    body:not(.is-view-mode) #selectionBoundingBox .resize-handle {
+      display: block;
+      pointer-events: auto;
+      z-index: 910;
     }
 
     /* アノテーション削除ボタン */
@@ -1891,69 +1935,6 @@
           </ul>
         </div>
 
-        <!-- 整列パネル -->
-        <hr class="panel-sep">
-        <p class="panel-title">
-          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M4 22H2V2h2v20zm18-5H6v-2h16v2zm-4-4H6v-2h12v2zm4-4H6V7h16v2zm-4-4H6V3h12v2z"/>
-          </svg>
-          整列
-        </p>
-        <div id="alignPanel" class="align-panel is-disabled">
-          <div class="align-row">
-            <span class="align-row-label">垂直</span>
-            <div class="align-btns">
-              <button class="align-btn" onclick="alignObjects('left')" title="垂直左揃え">
-                <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
-                  <rect x="0" y="0" width="1.5" height="14"/>
-                  <rect x="2" y="1"  width="6" height="4" rx="0.5"/>
-                  <rect x="2" y="9" width="9" height="4" rx="0.5"/>
-                </svg>
-              </button>
-              <button class="align-btn" onclick="alignObjects('centerH')" title="垂直中央揃え">
-                <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
-                  <rect x="7.25" y="0" width="1.5" height="14"/>
-                  <rect x="3" y="1"  width="10" height="4" rx="0.5"/>
-                  <rect x="4.5" y="9" width="7"  height="4" rx="0.5"/>
-                </svg>
-              </button>
-              <button class="align-btn" onclick="alignObjects('right')" title="垂直右揃え">
-                <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
-                  <rect x="14.5" y="0" width="1.5" height="14"/>
-                  <rect x="8.5" y="1"  width="6" height="4" rx="0.5"/>
-                  <rect x="5.5" y="9" width="9" height="4" rx="0.5"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          <div class="align-row">
-            <span class="align-row-label">水平</span>
-            <div class="align-btns">
-              <button class="align-btn" onclick="alignObjects('top')" title="水平上揃え">
-                <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
-                  <rect x="0" y="0" width="16" height="1.5"/>
-                  <rect x="1"  y="2" width="4" height="6" rx="0.5"/>
-                  <rect x="9" y="2" width="4" height="9" rx="0.5"/>
-                </svg>
-              </button>
-              <button class="align-btn" onclick="alignObjects('centerV')" title="水平中央揃え">
-                <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
-                  <rect x="0" y="6.25" width="16" height="1.5"/>
-                  <rect x="1"  y="3.5" width="4" height="7" rx="0.5"/>
-                  <rect x="9" y="2"   width="4" height="10" rx="0.5"/>
-                </svg>
-              </button>
-              <button class="align-btn" onclick="alignObjects('bottom')" title="水平下揃え">
-                <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
-                  <rect x="0" y="12.5" width="16" height="1.5"/>
-                  <rect x="1"  y="6" width="4" height="6.5" rx="0.5"/>
-                  <rect x="9" y="3" width="4" height="9.5" rx="0.5"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-
         <!-- 詳細設定パネル -->
         <hr class="panel-sep">
         <p class="panel-title">
@@ -1992,7 +1973,6 @@
                   </dd>
                 </dl>
               </div>
-              <p class="side-detail-hint">オーサリングパネルのボタンを<br>選択すると入力できます</p>
             </div>
           </div>
           <!-- アクティブ時 -->
@@ -2011,20 +1991,72 @@
               <dl id="dialogFormSpecific"></dl>
             </div>
             <div class="side-detail-footer">
-              <div class="side-detail-footer-row">
-                <button class="dialog-btn cancel">キャンセル</button>
-                <button class="dialog-btn delete-btn">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px">
-                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                  </svg>
-                  削除
-                </button>
-              </div>
-              <button class="dialog-btn ok" onclick="saveDialog()">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px">
-                  <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
+              <!-- JS参照用に非表示で残す（削除するとquerySelectorがnullエラーになる） -->
+              <button class="dialog-btn delete-btn" style="display:none"></button>
+              <button class="dialog-btn cancel" style="display:none"></button>
+              <button class="dialog-btn ok"     style="display:none"></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 整列パネル -->
+        <hr class="panel-sep">
+        <p class="panel-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M4 22H2V2h2v20zm18-5H6v-2h16v2zm-4-4H6v-2h12v2zm4-4H6V7h16v2zm-4-4H6V3h12v2z"/>
+          </svg>
+          整列
+        </p>
+        <div id="alignPanel" class="align-panel is-disabled">
+          <div class="align-row">
+            <span class="align-row-label">水平</span>
+            <div class="align-btns">
+              <button class="align-btn" onclick="alignObjects('left')" title="水平左揃え">
+                <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
+                  <rect x="0" y="0" width="1.5" height="14"/>
+                  <rect x="2" y="1"  width="6" height="4" rx="0.5"/>
+                  <rect x="2" y="9" width="9" height="4" rx="0.5"/>
                 </svg>
-                この内容で設定する
+              </button>
+              <button class="align-btn" onclick="alignObjects('centerH')" title="水平中央揃え">
+                <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
+                  <rect x="7.25" y="0" width="1.5" height="14"/>
+                  <rect x="3" y="1"  width="10" height="4" rx="0.5"/>
+                  <rect x="4.5" y="9" width="7"  height="4" rx="0.5"/>
+                </svg>
+              </button>
+              <button class="align-btn" onclick="alignObjects('right')" title="水平右揃え">
+                <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
+                  <rect x="14.5" y="0" width="1.5" height="14"/>
+                  <rect x="8.5" y="1"  width="6" height="4" rx="0.5"/>
+                  <rect x="5.5" y="9" width="9" height="4" rx="0.5"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="align-row">
+            <span class="align-row-label">垂直</span>
+            <div class="align-btns">
+              <button class="align-btn" onclick="alignObjects('top')" title="垂直上揃え">
+                <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
+                  <rect x="0" y="0" width="16" height="1.5"/>
+                  <rect x="1"  y="2" width="4" height="6" rx="0.5"/>
+                  <rect x="9" y="2" width="4" height="9" rx="0.5"/>
+                </svg>
+              </button>
+              <button class="align-btn" onclick="alignObjects('centerV')" title="垂直中央揃え">
+                <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
+                  <rect x="0" y="6.25" width="16" height="1.5"/>
+                  <rect x="1"  y="3.5" width="4" height="7" rx="0.5"/>
+                  <rect x="9" y="2"   width="4" height="10" rx="0.5"/>
+                </svg>
+              </button>
+              <button class="align-btn" onclick="alignObjects('bottom')" title="垂直下揃え">
+                <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
+                  <rect x="0" y="12.5" width="16" height="1.5"/>
+                  <rect x="1"  y="6" width="4" height="6.5" rx="0.5"/>
+                  <rect x="9" y="3" width="4" height="9.5" rx="0.5"/>
+                </svg>
               </button>
             </div>
           </div>
@@ -2199,7 +2231,7 @@
         form.appendChild(dd);
       });
 
-      document.getElementById('sideDetailEmpty').style.display = 'none';
+      document.getElementById('sideDetailEmpty').style.visibility = 'hidden';
       document.getElementById('sideDetailActive').style.display = '';
     }
 
@@ -2215,7 +2247,7 @@
       document.getElementById('detailSectionSep').style.display      = 'none';
       document.getElementById('sideDetailSpecificWrap').style.display = 'none';
       _renderGrayedPanel(lastDetailType);
-      document.getElementById('sideDetailEmpty').style.display = '';
+      document.getElementById('sideDetailEmpty').style.visibility = '';
       // 選択が解除されたタイミングでバウンディングボックスを即削除
       updateAlignPanel();
       // デルタ計算の基準値をクリア
@@ -2263,7 +2295,6 @@
         <div class="side-detail-grayed">
           <p class="side-detail-title">${cfg?.label ?? type}設定</p>
           <div class="side-detail-form"><dl>${commonRows}</dl></div>
-          <p class="side-detail-hint">オブジェクトを選択すると<br>入力できます</p>
         </div>`;
     }
 
@@ -2361,6 +2392,7 @@
         });
 
         makeDraggable(clone);
+        makeResizable(clone);
         page.appendChild(clone);
         copies.push(clone);
       });
@@ -2512,9 +2544,9 @@
         form.appendChild(dd);
       });
 
-      // 削除ボタン：選択中の付箋を全件削除
+      // 削除ボタン：常に非表示（削除はDeleteキーで行う）
       const dialogDeleteBtn = document.querySelector('.dialog-btn.delete-btn');
-      dialogDeleteBtn.style.display = '';
+      dialogDeleteBtn.style.display = 'none';
       dialogDeleteBtn.onclick = () => {
         const count = selectedStickySet.size;
         selectedStickySet.forEach(note => note.remove());
@@ -2554,7 +2586,7 @@
         updateStatus(`付箋 ${count} 件を一括更新しました`);
       };
 
-      document.getElementById('sideDetailEmpty').style.display = 'none';
+      document.getElementById('sideDetailEmpty').style.visibility = 'hidden';
       document.getElementById('sideDetailActive').style.display = '';
     }
 
@@ -2712,16 +2744,16 @@
      * @param {string} type - アノテーション種別
      */
     function activateAnnotationMode(type) {
-      // 同じボタンを再度押したらモードを解除（トグル）
+      // 同じボタンを再度押したらモードを解除（トグル）＆選択解除
       if (currentDrawType === type) {
         deactivateAnnotationMode();
+        deselectAllObjects();
         closeDialog();
         updateStatus('描画モードを解除しました');
         return;
       }
 
-      // 別のボタンへ切り替える際はオブジェクトの選択を全解除
-      deselectAllObjects();
+      // 別ボタンへ切り替え：オブジェクト選択はページ操作まで維持する
 
       // 前回のアクティブボタンのハイライトを解除
       document.querySelectorAll('li[data-ann-type]').forEach(li => li.classList.remove('is-ann-active'));
@@ -2850,6 +2882,115 @@
       }
       confirmAnnotation(type);
       if (_specForm) _specForm.querySelectorAll('[data-qc-inject]').forEach(e => e.remove());
+    }
+
+    /**
+     * 既存のアノテーションオブジェクトをダブルクリックしたときに表示する編集ポップアップ。
+     * quick-popup と同じ構造を使い、確定時に confirmAnnotation(type, el) を呼んで更新する。
+     * @param {HTMLElement} el - 編集対象の ann-object / ann-icon-obj 要素
+     */
+    function openEditPopup(el) {
+      // 既存ポップアップを削除
+      const existing = document.getElementById('quickCreatePopup');
+      if (existing) existing.remove();
+
+      const type = el.dataset.type;
+      const cfg  = ANNOTATION_TYPE_CONFIG[type];
+      if (!cfg) return;
+
+      // 保存済みデータを取得して現在の位置・サイズで上書き
+      const prevData = {};
+      try { Object.assign(prevData, JSON.parse(el.dataset.savedData || '{}')); } catch {}
+      prevData.annPosX        = parseFloat(el.style.left) || 0;
+      prevData.annPosY        = parseFloat(el.style.top)  || 0;
+      prevData.annWidth       = el.offsetWidth;
+      prevData.annHeight      = el.offsetHeight;
+      prevData.annDisplayType = el.classList.contains('ann-icon-obj') ? 'icon'
+                                : (prevData.annDisplayType || 'marker');
+
+      const popup = document.createElement('div');
+      popup.id        = 'quickCreatePopup';
+      popup.className = 'quick-popup dialog-box';
+      popup.innerHTML = `
+        <div class="dialog-title">
+          <p>■ ${cfg.label}を編集</p>
+          <span id="qcCloseBtn">×</span>
+        </div>
+        <div class="dialog-contents">
+          <div class="side-detail-form" style="margin:0 0 6px;">
+            <dl id="qcFormCommon"></dl>
+          </div>
+          <div id="qcSepWrap" style="display:none">
+            <div class="detail-section-sep" style="margin:6px 0;">種別設定</div>
+            <div class="side-detail-form" style="margin:0;">
+              <dl id="qcFormSpecific"></dl>
+            </div>
+          </div>
+        </div>
+        <div class="dialog-footer">
+          <button class="dialog-btn cancel" id="qcCancelBtn">× キャンセル</button>
+          <button class="dialog-btn ok"     id="qcOkBtn">&gt; 更新する</button>
+        </div>
+      `;
+
+      document.body.appendChild(popup);
+
+      buildCommonFields(document.getElementById('qcFormCommon'), type, prevData, null);
+
+      if (type !== 'sticky') {
+        buildSpecificFields(document.getElementById('qcFormSpecific'), type, prevData);
+        document.getElementById('qcSepWrap').style.display = '';
+      }
+
+      // ポップアップを対象要素の右隣に表示（ビューポートを超えないよう補正）
+      const elRect = el.getBoundingClientRect();
+      const pw   = popup.offsetWidth  || 380;
+      const ph   = popup.offsetHeight || 300;
+      const left = Math.min(elRect.right + 8, window.innerWidth  - pw - 8);
+      const top  = Math.min(elRect.top,       window.innerHeight - ph - 8);
+      popup.style.left = Math.max(8, left) + 'px';
+      popup.style.top  = Math.max(8, top)  + 'px';
+
+      // 更新ボタン：popup フォーム値 → サイドバーフォームへ転写 → confirmAnnotation
+      document.getElementById('qcOkBtn').onclick = () => {
+        // 表示タイプを先に読んでおく（転写後は DOM が変わる）
+        const newDisplayType = document.getElementById('qcFormSpecific')
+          ?.querySelector('#annDisplayType')?.value || 'marker';
+
+        ['qcFormCommon', 'qcFormSpecific'].forEach((srcId, i) => {
+          const src  = document.getElementById(srcId);
+          const dest = document.getElementById(['dialogFormCommon', 'dialogFormSpecific'][i]);
+          if (!src || !dest) return;
+          src.querySelectorAll('input[id], select[id], textarea[id]').forEach(srcEl => {
+            const destEl = dest.querySelector(`[id="${srcEl.id}"]`);
+            if (destEl) {
+              destEl.value = srcEl.value;
+            } else {
+              const inp = document.createElement('input');
+              inp.type = 'hidden'; inp.id = srcEl.id; inp.value = srcEl.value;
+              inp.dataset.qcInject = '1';
+              dest.appendChild(inp);
+            }
+          });
+        });
+
+        closeQuickCreateDialog();
+        confirmAnnotation(type, el);
+
+        // マーカー型への変更時はリサイズハンドルを再設定
+        if (newDisplayType === 'marker') makeResizable(el);
+
+        // 注入した hidden input を後片付け
+        ['dialogFormCommon', 'dialogFormSpecific'].forEach(id => {
+          const form = document.getElementById(id);
+          if (form) form.querySelectorAll('[data-qc-inject]').forEach(e => e.remove());
+        });
+      };
+
+      document.getElementById('qcCancelBtn').onclick = closeQuickCreateDialog;
+      document.getElementById('qcCloseBtn').onclick  = closeQuickCreateDialog;
+
+      updateStatus(`${cfg.label}の設定を変更して「更新する」を押してください`);
     }
 
     /**
@@ -3382,35 +3523,19 @@
         el.classList.toggle('is-field-disabled', !!isIconObj);
       });
 
-      // 種別固有フィールドを生成（オブジェクト選択時のみ表示）
+      // 種別固有フィールドを生成（サイドバーでは非表示だが confirmAnnotation が読み取るため常に生成）
       buildSpecificFields(specificForm, type, savedData);
 
-      // 種別固有セクションはオブジェクト選択時のみ表示（付箋は種別設定なしのため常に非表示）
+      // 種別固有セクションはサイドメニューでは常に非表示（ダブルクリック編集ポップアップで編集する）
       const sepEl      = document.getElementById('detailSectionSep');
       const specificEl = document.getElementById('sideDetailSpecificWrap');
-      if (existingEl && type !== 'sticky') {
-        sepEl.style.display      = '';
-        specificEl.style.display = '';
-      } else {
-        sepEl.style.display      = 'none';
-        specificEl.style.display = 'none';
-      }
+      sepEl.style.display      = 'none';
+      specificEl.style.display = 'none';
 
-      // ダイアログ削除ボタンの制御：再設定時は実際に削除、新規作成時は非表示
+      // ダイアログ削除ボタンは常に非表示（削除はDeleteキーで行う）
       const dialogDeleteBtn = document.querySelector('.dialog-btn.delete-btn');
-      if (existingEl) {
-        dialogDeleteBtn.style.display = '';
-        dialogDeleteBtn.onclick = () => {
-          if (existingEl.dataset.type === 'sticky') selectedStickySet.delete(existingEl);
-          existingEl.remove();
-          closeDialog();
-          document.querySelector('.dialog-btn.ok').onclick = saveDialog;
-          updateStatus('削除しました');
-        };
-      } else {
-        dialogDeleteBtn.style.display = 'none';
-        dialogDeleteBtn.onclick = null;
-      }
+      dialogDeleteBtn.style.display = 'none';
+      dialogDeleteBtn.onclick = null;
 
       // キャンセルボタン
       document.querySelector('.dialog-btn.cancel').onclick = () => {
@@ -3423,7 +3548,7 @@
       // 保存
       document.querySelector('.dialog-btn.ok').onclick = () => confirmAnnotation(type, existingEl);
 
-      document.getElementById('sideDetailEmpty').style.display = 'none';
+      document.getElementById('sideDetailEmpty').style.visibility = 'hidden';
       document.getElementById('sideDetailActive').style.display = '';
     }
 
@@ -3669,6 +3794,14 @@
           }
         }
       });
+
+      // ダブルクリック：編集モード時に編集ポップアップを開く
+      ann.addEventListener('dblclick', (e) => {
+        if (document.body.classList.contains('is-view-mode')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        openEditPopup(ann);
+      });
     }
 
     /**
@@ -3680,7 +3813,8 @@
       // 既存ハンドルを削除（クローン再初期化時の重複防止）
       el.querySelectorAll('.resize-handle').forEach(h => h.remove());
 
-      ['tl', 'tr', 'bl', 'br'].forEach(corner => {
+      // コーナー4点 + 各辺中点4点 = 計8ハンドル
+      ['tl', 'tc', 'tr', 'ml', 'mr', 'bl', 'bc', 'br'].forEach(corner => {
         const handle = document.createElement('div');
         handle.className = 'resize-handle';
         handle.dataset.corner = corner;
@@ -3698,20 +3832,21 @@
           const startHeight = el.offsetHeight;
           const MIN_SIZE    = 10;
 
-          // Shift 制約：Shift を押した瞬間の位置を起点に軸を判定して固定する
-          let axis        = null;
-          let prevShift   = false;
-          let shiftSnapX  = null; // Shift 押下時の clientX
-          let shiftSnapY  = null; // Shift 押下時の clientY
-          let frozenDx    = null; // 固定軸で凍結する dx 値
-          let frozenDy    = null; // 固定軸で凍結する dy 値
+          // Shift 軸固定はコーナーハンドルのみ適用
+          const isCorner = ['tl', 'tr', 'bl', 'br'].includes(corner);
+          let axis       = null;
+          let prevShift  = false;
+          let shiftSnapX = null;
+          let shiftSnapY = null;
+          let frozenDx   = null;
+          let frozenDy   = null;
 
           const onMove = (ev) => {
             let dx = ev.clientX - startX;
             let dy = ev.clientY - startY;
 
-            if (ev.shiftKey) {
-              // Shift を押した瞬間：その時点の位置・dx/dy を記録して軸をリセット
+            if (isCorner && ev.shiftKey) {
+              // Shift を押した瞬間：基準点と dx/dy を記録して軸をリセット
               if (!prevShift) {
                 shiftSnapX = ev.clientX;
                 shiftSnapY = ev.clientY;
@@ -3719,20 +3854,16 @@
                 frozenDy   = dy;
                 axis       = null;
               }
-              // Shift 押下時点からの増分で軸を決定
               const ddx = ev.clientX - shiftSnapX;
               const ddy = ev.clientY - shiftSnapY;
               if (axis === null && (Math.abs(ddx) > 3 || Math.abs(ddy) > 3)) {
                 axis = Math.abs(ddx) >= Math.abs(ddy) ? 'h' : 'v';
               }
-              // 固定軸は Shift 押下時の値で凍結
               if (axis === 'h') dy = frozenDy;
               if (axis === 'v') dx = frozenDx;
-            } else {
-              // Shift を離したら制約を全解除
-              axis = prevShift = false;
+            } else if (isCorner) {
+              axis       = null;
               shiftSnapX = shiftSnapY = frozenDx = frozenDy = null;
-              axis = null;
             }
             prevShift = ev.shiftKey;
 
@@ -3743,15 +3874,31 @@
               el.style.top    = (startTop  + startHeight - newH) + 'px';
               el.style.width  = newW + 'px';
               el.style.height = newH + 'px';
+            } else if (corner === 'tc') {
+              // 上辺中点：縦方向のみ
+              const newH = Math.max(startHeight - dy, MIN_SIZE);
+              el.style.top    = (startTop  + startHeight - newH) + 'px';
+              el.style.height = newH + 'px';
             } else if (corner === 'tr') {
               const newH = Math.max(startHeight - dy, MIN_SIZE);
               el.style.top    = (startTop  + startHeight - newH) + 'px';
               el.style.width  = Math.max(startWidth  + dx, MIN_SIZE) + 'px';
               el.style.height = newH + 'px';
+            } else if (corner === 'ml') {
+              // 左辺中点：横方向のみ
+              const newW = Math.max(startWidth  - dx, MIN_SIZE);
+              el.style.left  = (startLeft + startWidth  - newW) + 'px';
+              el.style.width = newW + 'px';
+            } else if (corner === 'mr') {
+              // 右辺中点：横方向のみ
+              el.style.width = Math.max(startWidth + dx, MIN_SIZE) + 'px';
             } else if (corner === 'bl') {
               const newW = Math.max(startWidth  - dx, MIN_SIZE);
               el.style.left   = (startLeft + startWidth  - newW) + 'px';
               el.style.width  = newW + 'px';
+              el.style.height = Math.max(startHeight + dy, MIN_SIZE) + 'px';
+            } else if (corner === 'bc') {
+              // 下辺中点：縦方向のみ
               el.style.height = Math.max(startHeight + dy, MIN_SIZE) + 'px';
             } else if (corner === 'br') {
               el.style.width  = Math.max(startWidth  + dx, MIN_SIZE) + 'px';
@@ -4253,6 +4400,156 @@
      * @param {string} msg - 表示するメッセージ
      */
     /**
+     * 複数選択時のバウンディングボックスに四隅リサイズハンドルを設置する。
+     * ハンドルをドラッグすると、全選択オブジェクトが外接矩形に対して比例スケーリングされる。
+     * @param {HTMLElement} box - #selectionBoundingBox 要素
+     */
+    function addBoundingBoxHandles(box) {
+      // 既存ハンドルを削除（再描画時の重複防止）
+      box.querySelectorAll('.resize-handle').forEach(h => h.remove());
+
+      // コーナー4点 + 各辺中点4点 = 計8ハンドル
+      ['tl', 'tc', 'tr', 'ml', 'mr', 'bl', 'bc', 'br'].forEach(corner => {
+        const handle = document.createElement('div');
+        handle.className = 'resize-handle';
+        handle.dataset.corner = corner;
+
+        handle.addEventListener('mousedown', (e) => {
+          if (document.body.classList.contains('is-view-mode')) return;
+          e.preventDefault();
+          e.stopPropagation();
+
+          const startX    = e.clientX;
+          const startY    = e.clientY;
+          const boxLeft   = parseFloat(box.style.left);
+          const boxTop    = parseFloat(box.style.top);
+          const boxWidth  = parseFloat(box.style.width);
+          const boxHeight = parseFloat(box.style.height);
+          const MIN_SIZE  = 20;
+
+          // 各選択オブジェクトの初期状態を記録（アイコン型はリサイズ対象外・位置移動のみ）
+          const snapshots = getSelectedObjects()
+            .filter(el => !el.classList.contains('ann-icon-obj'))
+            .map(el => ({
+              el,
+              left:   parseFloat(el.style.left)   || 0,
+              top:    parseFloat(el.style.top)    || 0,
+              width:  el.offsetWidth,
+              height: el.offsetHeight,
+            }));
+          // アイコン型：位置のみ追従（リサイズなし）
+          const iconSnapshots = getSelectedObjects()
+            .filter(el => el.classList.contains('ann-icon-obj'))
+            .map(el => ({
+              el,
+              left: parseFloat(el.style.left) || 0,
+              top:  parseFloat(el.style.top)  || 0,
+            }));
+
+          // Shift 軸固定はコーナーハンドルのみ適用（単一選択と同仕様）
+          const isCorner = ['tl', 'tr', 'bl', 'br'].includes(corner);
+          let axis       = null;
+          let prevShift  = false;
+          let shiftSnapX = null;
+          let shiftSnapY = null;
+          let frozenDx   = null;
+          let frozenDy   = null;
+
+          const onMove = (ev) => {
+            let dx = ev.clientX - startX;
+            let dy = ev.clientY - startY;
+
+            if (isCorner && ev.shiftKey) {
+              if (!prevShift) {
+                shiftSnapX = ev.clientX;
+                shiftSnapY = ev.clientY;
+                frozenDx   = dx;
+                frozenDy   = dy;
+                axis       = null;
+              }
+              const ddx = ev.clientX - shiftSnapX;
+              const ddy = ev.clientY - shiftSnapY;
+              if (axis === null && (Math.abs(ddx) > 3 || Math.abs(ddy) > 3)) {
+                axis = Math.abs(ddx) >= Math.abs(ddy) ? 'h' : 'v';
+              }
+              if (axis === 'h') dy = frozenDy;
+              if (axis === 'v') dx = frozenDx;
+            } else if (isCorner) {
+              axis       = null;
+              shiftSnapX = shiftSnapY = frozenDx = frozenDy = null;
+            }
+            prevShift = ev.shiftKey;
+
+            let newLeft   = boxLeft;
+            let newTop    = boxTop;
+            let newWidth  = boxWidth;
+            let newHeight = boxHeight;
+
+            if (corner === 'tl') {
+              newWidth  = Math.max(boxWidth  - dx, MIN_SIZE);
+              newHeight = Math.max(boxHeight - dy, MIN_SIZE);
+              newLeft   = boxLeft + boxWidth  - newWidth;
+              newTop    = boxTop  + boxHeight - newHeight;
+            } else if (corner === 'tc') {
+              newHeight = Math.max(boxHeight - dy, MIN_SIZE);
+              newTop    = boxTop  + boxHeight - newHeight;
+            } else if (corner === 'tr') {
+              newWidth  = Math.max(boxWidth  + dx, MIN_SIZE);
+              newHeight = Math.max(boxHeight - dy, MIN_SIZE);
+              newTop    = boxTop  + boxHeight - newHeight;
+            } else if (corner === 'ml') {
+              newWidth  = Math.max(boxWidth  - dx, MIN_SIZE);
+              newLeft   = boxLeft + boxWidth  - newWidth;
+            } else if (corner === 'mr') {
+              newWidth  = Math.max(boxWidth  + dx, MIN_SIZE);
+            } else if (corner === 'bl') {
+              newWidth  = Math.max(boxWidth  - dx, MIN_SIZE);
+              newHeight = Math.max(boxHeight + dy, MIN_SIZE);
+              newLeft   = boxLeft + boxWidth  - newWidth;
+            } else if (corner === 'bc') {
+              newHeight = Math.max(boxHeight + dy, MIN_SIZE);
+            } else {
+              newWidth  = Math.max(boxWidth  + dx, MIN_SIZE);
+              newHeight = Math.max(boxHeight + dy, MIN_SIZE);
+            }
+
+            const scaleX = newWidth  / boxWidth;
+            const scaleY = newHeight / boxHeight;
+
+            // 各オブジェクトをバウンディングボックス基準で比例スケーリング
+            snapshots.forEach(({ el, left, top, width, height }) => {
+              el.style.left   = (newLeft + (left   - boxLeft) * scaleX) + 'px';
+              el.style.top    = (newTop  + (top    - boxTop)  * scaleY) + 'px';
+              el.style.width  = (width  * scaleX) + 'px';
+              el.style.height = (height * scaleY) + 'px';
+            });
+
+            // アイコン型はリサイズせず位置のみ破線に追従
+            iconSnapshots.forEach(({ el, left, top }) => {
+              el.style.left = (newLeft + (left - boxLeft) * scaleX) + 'px';
+              el.style.top  = (newTop  + (top  - boxTop)  * scaleY) + 'px';
+            });
+
+            // バウンディングボックス自体を更新
+            box.style.left   = newLeft   + 'px';
+            box.style.top    = newTop    + 'px';
+            box.style.width  = newWidth  + 'px';
+            box.style.height = newHeight + 'px';
+          };
+
+          const onUp = () => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup',   onUp);
+          };
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup',   onUp);
+        });
+
+        box.appendChild(handle);
+      });
+    }
+
+    /**
      * 現在選択中の全オブジェクト（付箋 + 非sticky）を配列で返す。
      * @returns {HTMLElement[]}
      */
@@ -4274,6 +4571,8 @@
       const els = getSelectedObjects();
       const count = els.length;
       panel.classList.toggle('is-disabled', count < 2);
+      // 複数選択クラスを body に反映（個別ハンドルの表示切替に使用）
+      document.body.classList.toggle('is-multi-select', count >= 2);
 
       const existing = document.getElementById('selectionBoundingBox');
       if (count < 2) {
@@ -4305,6 +4604,9 @@
       box.style.width  = (maxR - minL) + 'px';
       box.style.height = (maxB - minT) + 'px';
       if (!existing) pageEl.appendChild(box);
+
+      // バウンディングボックスにリサイズハンドルを設置
+      addBoundingBoxHandles(box);
     }
 
     /**
@@ -4345,8 +4647,8 @@
         }
       });
 
-      const labelMap = { left:'垂直左揃え', centerH:'垂直中央揃え', right:'垂直右揃え',
-                         top:'水平上揃え',  centerV:'水平中央揃え',  bottom:'水平下揃え' };
+      const labelMap = { left:'水平左揃え', centerH:'水平中央揃え', right:'水平右揃え',
+                         top:'垂直上揃え',  centerV:'垂直中央揃え',  bottom:'垂直下揃え' };
       updateStatus(`${labelMap[mode]}を実行しました（${els.length}件）`);
     }
 
