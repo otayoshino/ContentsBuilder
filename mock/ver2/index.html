@@ -1626,6 +1626,41 @@
       z-index: 50;
     }
 
+    /* 大問ボタン（ページ上に配置するグループトグルボタン） */
+    .daimon-btn {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 64px;
+      height: 28px;
+      padding: 0 12px;
+      background: #4a6fa8;
+      color: #fff;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      user-select: none;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+      z-index: 5;
+      box-sizing: border-box;
+    }
+    body:not(.is-view-mode) .daimon-btn {
+      opacity: 0.8;
+      cursor: move;
+    }
+    .daimon-btn.is-selected {
+      outline: 2px solid #ff5500;
+      outline-offset: 2px;
+    }
+    .is-view-mode .daimon-btn {
+      cursor: pointer;
+    }
+    .is-view-mode .daimon-btn:hover {
+      background: #3a5a90;
+    }
+
     /* ページの描画モードカーソル */
     .page.drawing-mode {
       cursor: crosshair !important;
@@ -1917,6 +1952,15 @@
                 </svg>
               </div>
               <p class="size_s">付箋グループ切替</p>
+            </li>
+            <!-- 大問ボタン作成 -->
+            <li onclick="createDaimonButton()" data-tip="選択中の付箋を一括表示/非表示する大問ボタンを作成" style="width: 100%">
+              <div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                </svg>
+              </div>
+              <p class="size_s">大問ボタン作成</p>
             </li>
           </ul>
         </div>
@@ -2603,6 +2647,85 @@
      * 選択中の付箋のグループ化状態をトグルする。
      * 全員グループ済み → 解除、それ以外 → グループ化（2件以上必要）。
      */
+    /** 大問ボタンIDカウンター */
+    let daimonCounter = 0;
+
+    /**
+     * 選択中の付箋を一括表示/非表示できる大問ボタンをページ上に作成する。
+     * 2件以上の付箋が選択されている必要がある。
+     */
+    function createDaimonButton() {
+      if (document.body.classList.contains('is-view-mode')) return;
+      const stickies = [...selectedStickySet];
+      if (stickies.length < 2) {
+        showToast('2件以上の付箋を選択してください。');
+        return;
+      }
+
+      const did = `daimon-${++daimonCounter}`;
+
+      // 選択中の付箋に大問IDを付与
+      stickies.forEach(note => { note.dataset.daimonId = did; });
+
+      // 配置位置：選択グループの左上の少し上
+      const minLeft = Math.min(...stickies.map(n => parseFloat(n.style.left) || 0));
+      const minTop  = Math.min(...stickies.map(n => parseFloat(n.style.top)  || 0));
+
+      const page = document.getElementById('pageLeft');
+      const el = document.createElement('div');
+      el.className        = 'daimon-btn';
+      el.dataset.type     = 'daimon';
+      el.dataset.id       = ++annIdCounter;
+      el.dataset.daimonId = did;
+      el.textContent      = '大問';
+      el.style.left       = minLeft + 'px';
+      el.style.top        = Math.max(0, minTop - 36) + 'px';
+
+      addDaimonClickHandler(el);
+      makeDraggable(el);
+      page.appendChild(el);
+
+      updateStatus(`大問ボタンを作成しました（${stickies.length}件の付箋に紐付け）`);
+    }
+
+    /**
+     * 大問ボタンにクリックハンドラを設定する。
+     * 編集モード：選択/解除。閲覧モード：紐付き付箋を一括表示/非表示。
+     * @param {HTMLElement} btn - 大問ボタン要素
+     */
+    function addDaimonClickHandler(btn) {
+      btn.addEventListener('click', (e) => {
+        if (!document.body.classList.contains('is-view-mode')) {
+          // 編集モード：選択処理
+          if (e.shiftKey) {
+            btn.classList.toggle('is-selected');
+          } else {
+            // 他の選択をすべて解除してこのボタンのみ選択
+            selectedStickySet.forEach(n => n.classList.remove('is-selected'));
+            selectedStickySet.clear();
+            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected')
+              .forEach(a => a.classList.remove('is-selected'));
+            btn.classList.add('is-selected');
+          }
+          const count = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected').length
+                      + selectedStickySet.size;
+          updateStatus(count > 1 ? `${count} 件のオブジェクトを選択中` : '大問ボタンを選択中');
+          return;
+        }
+
+        // 閲覧モード：紐付き付箋を一括トグル
+        const did = btn.dataset.daimonId;
+        const targets = [...document.querySelectorAll(`.sticky-note[data-daimon-id="${did}"]`)];
+        if (targets.length === 0) return;
+        const allVisible = targets.every(t => t.classList.contains('state-visible'));
+        targets.forEach(t => {
+          t.classList.toggle('state-visible', !allVisible);
+          t.classList.toggle('state-hidden',   allVisible);
+        });
+        updateStatus(allVisible ? '付箋を非表示にしました' : '付箋を表示しました');
+      });
+    }
+
     function toggleStickyGroup() {
       if (selectedStickySet.size === 0) {
         showToast('付箋を選択してください。');
@@ -2800,7 +2923,7 @@
     function deselectAllObjects() {
       selectedStickySet.forEach(n => n.classList.remove('is-selected'));
       selectedStickySet.clear();
-      document.querySelectorAll('.ann-object, .ann-icon-obj').forEach(a => a.classList.remove('is-selected'));
+      document.querySelectorAll('.ann-object, .ann-icon-obj, .daimon-btn').forEach(a => a.classList.remove('is-selected'));
       selectedAnnotation = null;
       closeDialog();
     }
@@ -4366,6 +4489,17 @@
           deleted++;
         });
 
+        // 選択中の大問ボタンを削除（紐付き付箋の daimon-id も解除）
+        document.querySelectorAll('.daimon-btn.is-selected').forEach(btn => {
+          const did = btn.dataset.daimonId;
+          if (did) {
+            document.querySelectorAll(`.sticky-note[data-daimon-id="${did}"]`)
+              .forEach(n => { delete n.dataset.daimonId; });
+          }
+          btn.remove();
+          deleted++;
+        });
+
         if (deleted > 0) {
           closeDialog();
           updateStatus(`${deleted} 件のオブジェクトを削除しました`);
@@ -4866,7 +5000,7 @@
     function getSelectedObjects() {
       const result = [];
       selectedStickySet.forEach(n => result.push(n));
-      document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected').forEach(a => result.push(a));
+      document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected').forEach(a => result.push(a));
       return result;
     }
 
@@ -4887,12 +5021,12 @@
       if (!addToSel) {
         selectedStickySet.forEach(n => n.classList.remove('is-selected'));
         selectedStickySet.clear();
-        document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected').forEach(a => a.classList.remove('is-selected'));
+        document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected').forEach(a => a.classList.remove('is-selected'));
       }
 
       // ページ上の全オブジェクトをチェックして矩形との交差判定
       const page = document.getElementById('pageLeft');
-      page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj').forEach(obj => {
+      page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn').forEach(obj => {
         const l = parseFloat(obj.style.left) || 0;
         const t = parseFloat(obj.style.top)  || 0;
         const r = l + obj.offsetWidth;
