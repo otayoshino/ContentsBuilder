@@ -4594,38 +4594,17 @@
 
       // 更新ボタン：popup フォーム値 → サイドバーフォームへ転写 → confirmAnnotation
       document.getElementById('qcOkBtn').onclick = () => {
-        // 表示タイプを先に読んでおく（転写後は DOM が変わる）
-        const newDisplayType = document.getElementById('qcFormSpecific')
-          ?.querySelector('#annDisplayType')?.value || 'marker';
-
-        ['qcFormCommon', 'qcFormSpecific'].forEach((srcId, i) => {
-          const src  = document.getElementById(srcId);
-          const dest = document.getElementById(['dialogFormCommon', 'dialogFormSpecific'][i]);
-          if (!src || !dest) return;
-          src.querySelectorAll('input[id], select[id], textarea[id]').forEach(srcEl => {
-            const destEl = dest.querySelector(`[id="${srcEl.id}"]`);
-            if (destEl) {
-              destEl.value = srcEl.value;
-            } else {
-              const inp = document.createElement('input');
-              inp.type = 'hidden'; inp.id = srcEl.id; inp.value = srcEl.value;
-              inp.dataset.qcInject = '1';
-              dest.appendChild(inp);
-            }
+        // ポップアップ内フォーム値を直接収集
+        const savedData = {};
+        ['qcFormCommon', 'qcFormSpecific'].forEach(formId => {
+          const formEl = document.getElementById(formId);
+          if (!formEl) return;
+          formEl.querySelectorAll('input[id], select[id], textarea[id]').forEach(el => {
+            savedData[el.id] = el.value;
           });
         });
-
         closeQuickCreateDialog();
-        confirmAnnotation(type, el);
-
-        // マーカー型への変更時はリサイズハンドルを再設定
-        if (newDisplayType === 'marker') makeResizable(el);
-
-        // 注入した hidden input を後片付け
-        ['dialogFormCommon', 'dialogFormSpecific'].forEach(id => {
-          const form = document.getElementById(id);
-          if (form) form.querySelectorAll('[data-qc-inject]').forEach(e => e.remove());
-        });
+        confirmAnnotation(type, el, savedData);
       };
 
       document.getElementById('qcCancelBtn').onclick = closeQuickCreateDialog;
@@ -5216,23 +5195,26 @@
      * @param {string} type
      * @param {HTMLElement|null} existingEl - 更新対象要素（新規作成時は null）
      */
-    function confirmAnnotation(type, existingEl = null) {
+    function confirmAnnotation(type, existingEl = null, overrideSavedData = null) {
       // 新規作成時は pendingRect が必要
       if (!existingEl && !pendingRect) { closeDialog(); return; }
 
       const isUpdate = existingEl !== null;
 
       // フォームフィールド値を一括収集
-      // 共通セクション（dialogFormCommon）と種別固有セクション（dialogFormSpecific）の
-      // 両方からすべての input / select / textarea を収集する
-      const savedData = {};
-      ['dialogFormCommon', 'dialogFormSpecific'].forEach(formId => {
-        const formEl = document.getElementById(formId);
-        if (!formEl) return;
-        formEl.querySelectorAll('input[id], select[id], textarea[id]').forEach(el => {
-          savedData[el.id] = el.value;
+      // overrideSavedDataがあればそれを優先、なければサイドバーのフォームから取得
+      let savedData = {};
+      if (overrideSavedData) {
+        savedData = overrideSavedData;
+      } else {
+        ['dialogFormCommon', 'dialogFormSpecific'].forEach(formId => {
+          const formEl = document.getElementById(formId);
+          if (!formEl) return;
+          formEl.querySelectorAll('input[id], select[id], textarea[id]').forEach(el => {
+            savedData[el.id] = el.value;
+          });
         });
-      });
+      }
 
       if (type === 'sticky') {
         // 色変換
@@ -5242,8 +5224,22 @@
         if (isUpdate) {
           // 更新前のスナップショットを Undo スタックに積む
           pushUndo({ type: 'prop', el: existingEl, prevSavedData: existingEl.dataset.savedData, prevStyleCssText: existingEl.style.cssText });
-          // 更新：色だけ切り替え
+          // 位置・サイズ・色を反映
+          if (savedData.annPosX !== undefined) existingEl.style.left = parseInt(savedData.annPosX, 10) + 'px';
+          if (savedData.annPosY !== undefined) existingEl.style.top  = parseInt(savedData.annPosY, 10) + 'px';
+          if (savedData.annWidth !== undefined)  existingEl.style.width  = parseInt(savedData.annWidth, 10) + 'px';
+          if (savedData.annHeight !== undefined) existingEl.style.height = parseInt(savedData.annHeight, 10) + 'px';
           existingEl.style.background = color;
+          // ラベル（annLabel）があれば反映
+          if (savedData.annLabel !== undefined) {
+            let labelSpan = existingEl.querySelector('.ann-label');
+            if (!labelSpan) {
+              labelSpan = document.createElement('span');
+              labelSpan.className = 'ann-label';
+              existingEl.appendChild(labelSpan);
+            }
+            labelSpan.textContent = savedData.annLabel;
+          }
           existingEl.dataset.savedData = JSON.stringify(savedData);
           updateStatus('付箋を更新しました');
         } else {
@@ -5405,6 +5401,13 @@
      * @param {HTMLElement} note - 付箋要素
      */
     function addStickyClickHandler(note) {
+            // ダブルクリック：編集モード時に編集ポップアップを開く
+            note.addEventListener('dblclick', (e) => {
+              if (document.body.classList.contains('is-view-mode')) return;
+              e.preventDefault();
+              e.stopPropagation();
+              openEditPopup(note);
+            });
       note.addEventListener('click', (e) => {
         // 編集モード時
         if (!document.body.classList.contains('is-view-mode')) {
