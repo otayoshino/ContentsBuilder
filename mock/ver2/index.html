@@ -5222,8 +5222,15 @@
         const color    = STICKY_COLOR_MAP[colorIdx] ?? STICKY_COLOR_MAP[0];
 
         if (isUpdate) {
-          // 更新前のスナップショットを Undo スタックに積む
-          pushUndo({ type: 'prop', el: existingEl, prevSavedData: existingEl.dataset.savedData, prevStyleCssText: existingEl.style.cssText });
+          // 更新前のスナップショットを Undo スタックに積む（ラベルやクラス名も含める）
+          pushUndo({
+            type: 'prop',
+            el: existingEl,
+            prevSavedData: existingEl.dataset.savedData,
+            prevStyleCssText: existingEl.style.cssText,
+            prevClassName: existingEl.className,
+            prevInnerHTML: existingEl.innerHTML
+          });
           // 位置・サイズ・色を反映
           if (savedData.annPosX !== undefined) existingEl.style.left = parseInt(savedData.annPosX, 10) + 'px';
           if (savedData.annPosY !== undefined) existingEl.style.top  = parseInt(savedData.annPosY, 10) + 'px';
