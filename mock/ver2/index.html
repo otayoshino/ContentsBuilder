@@ -1916,6 +1916,8 @@
       <span>AUTHORING MODE</span>
     </div>
 
+
+
     <!-- ナビ内コントロール -->
     <div class="nav-inner">
 
@@ -3445,44 +3447,53 @@
         showToast('付箋を選択してください。');
         return;
       }
-      // Undo用: 操作前の背景色・fuhyoji属性を記録
+      // Undo用: 操作前の背景色・fuhyoji属性・クラス名を記録
       const prevStates = [];
       selectedStickySet.forEach(note => {
         prevStates.push({
           el: note,
           prevBackground: note.style.background,
-          prevFuhyoji: note.dataset.fuhyoji
+          prevFuhyoji: note.dataset.fuhyoji,
+          prevClassName: note.className
         });
       });
       // 選択中の付箋の背景色を白一色に変更し、専用フラグを付与する
       selectedStickySet.forEach(note => {
         note.style.background = '#ffffff';
         note.dataset.fuhyoji = '1'; // 「付箋非表示」ボタンで設定された付箋と識別するフラグ
+        // 非表示状態にする（閲覧モードでクリック時のみ表示）
+        note.classList.remove('state-visible');
+        note.classList.add('state-hidden');
       });
       // Undoスタックに積む
       pushUndo({ type: 'sticky-hide', targets: prevStates });
       updateStatus(`${selectedStickySet.size} 件の付箋を白色に変更しました`);
-        /**
-         * Undo/Redo用: 付箋非表示（白色化）操作の取り消し・やり直し
-         * @param {Array} targets - {el, prevBackground, prevFuhyoji}
-         * @param {boolean} redo - trueでやり直し、falseで取り消し
-         */
-        function applyStickyHideUndo(targets, redo) {
-          targets.forEach(({ el, prevBackground, prevFuhyoji }) => {
-            if (!el) return;
-            if (redo) {
-              el.style.background = '#ffffff';
-              el.dataset.fuhyoji = '1';
-            } else {
-              el.style.background = prevBackground || '';
-              if (prevFuhyoji === undefined) {
-                delete el.dataset.fuhyoji;
-              } else {
-                el.dataset.fuhyoji = prevFuhyoji;
-              }
-            }
-          });
+    }
+
+    // Undo/Redo用: 付箋非表示（白色化）操作の取り消し・やり直し
+    // @param {Array} targets - {el, prevBackground, prevFuhyoji, prevClassName}
+    // @param {boolean} redo - trueでやり直し、falseで取り消し
+    function applyStickyHideUndo(targets, redo) {
+      targets.forEach(({ el, prevBackground, prevFuhyoji, prevClassName }) => {
+        if (!el) return;
+        if (redo) {
+          el.style.background = '#ffffff';
+          el.dataset.fuhyoji = '1';
+          el.classList.remove('state-visible');
+          el.classList.add('state-hidden');
+        } else {
+          el.style.background = prevBackground || '';
+          if (prevFuhyoji === undefined) {
+            delete el.dataset.fuhyoji;
+          } else {
+            el.dataset.fuhyoji = prevFuhyoji;
+          }
+          // クラス名を元に戻す
+          if (prevClassName) {
+            el.className = prevClassName;
+          }
         }
+      });
     }
 
     function toggleStickyGroup() {
@@ -3553,6 +3564,7 @@
       if (undoStack.length > UNDO_MAX) undoStack.shift();
       // 新しい操作が発生したので Redo 履歴をリセット
       redoStack.length = 0;
+
     }
 
     /**
@@ -3560,187 +3572,184 @@
      * op.type ごとに逆操作を実行する。
      */
     function undo() {
-      if (undoStack.length === 0) { showToast('これ以上戻れません。'); return; }
-      const op = undoStack.pop();
-      const page = document.getElementById('pageLeft');
-
-      switch (op.type) {
-        // --- 付箋非表示（白色化）の取り消し ---
-        case 'sticky-hide': {
-          applyStickyHideUndo(op.targets, false);
-          break;
-        }
-        // --- 作成の取り消し：要素を削除 ---
-        case 'create': {
-          op.elements.forEach(el => el.remove());
-          deselectAllObjects();
-          closeDialog();
-          break;
-        }
-
-        // --- 削除の取り消し：要素を復元 ---
-        case 'delete': {
-          op.snapshots.forEach(snap => {
-            const el = document.createElement('div');
-            el.className = snap.className;
-            el.dataset.id = snap.id;
-            el.dataset.type = snap.type || '';
-            if (snap.savedData)   el.dataset.savedData = snap.savedData;
-            if (snap.groupId)     el.dataset.groupId   = snap.groupId;
-            if (snap.daimonId)    el.dataset.daimonId  = snap.daimonId;
-            if (snap.kotaeId)     el.dataset.kotaeId   = snap.kotaeId;
-            if (snap.kotaeOrigBg !== undefined) el.dataset.kotaeOrigBg = snap.kotaeOrigBg;
-            if (snap.zuId)        el.dataset.zuId      = snap.zuId;
-            if (snap.shomeiId)    el.dataset.shomeiId  = snap.shomeiId;
-            el.dataset.page = snap.pageNum || '1';
-            el.style.cssText = snap.styleCssText;
-
-            // 種別に応じてハンドラ・内容を設定
-            if (el.classList.contains('sticky-note')) {
-              addStickyClickHandler(el);
-              makeResizable(el);
-            } else if (el.classList.contains('daimon-btn')) {
-              el.textContent = '大問';
-              addDaimonClickHandler(el);
-            } else if (el.classList.contains('kotae-btn')) {
-              el.textContent = '答';
-              addKotaeClickHandler(el);
-            } else if (el.classList.contains('zu-btn')) {
-              el.textContent = '図';
-              addZuBtnClickHandler(el);
-            } else if (el.classList.contains('shomei-btn')) {
-              el.textContent = '証明';
-              addShomeiClickHandler(el);
-            } else {
-              // ann-object / ann-icon-obj
-              // savedData からラベルを再構築
-              try {
-                const sd  = JSON.parse(snap.savedData || '{}');
-                const cfg = ANNOTATION_TYPE_CONFIG?.[snap.type];
-                if (el.classList.contains('ann-object')) {
-                  const span = document.createElement('span');
-                  span.className = 'ann-label';
-                  span.textContent = (sd.annLabel || '').trim() || cfg?.label || snap.type;
-                  el.appendChild(span);
-                } else if (el.classList.contains('ann-icon-obj')) {
-                  el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${cfg?.iconSvg || ''}</svg>`;
-                }
-              } catch (_) {}
-              addAnnClickHandler(el);
-              if (el.classList.contains('ann-object')) makeResizable(el);
-            }
-
-            makeDraggable(el);
-            page.appendChild(el);
-          });
-          // 削除時に解除した daimonId / kotaeId / shomeiId を付箋に再付与
-          if (op.linkedStickyChanges) {
-            op.linkedStickyChanges.forEach(({ el, daimonId, kotaeId, kotaeOrigBg, shomeiId, shomeiOrigBg, shomeiOutline, background, outline }) => {
-              if (daimonId    !== undefined) el.dataset.daimonId    = daimonId;
-              if (kotaeId     !== undefined) el.dataset.kotaeId     = kotaeId;
-              if (kotaeOrigBg !== undefined) el.dataset.kotaeOrigBg = kotaeOrigBg;
-              if (shomeiId    !== undefined) el.dataset.shomeiId    = shomeiId;
-              if (shomeiOrigBg !== undefined) el.dataset.shomeiOrigBg = shomeiOrigBg;
-              if (shomeiOutline !== undefined) el.dataset.shomeiOutline = shomeiOutline;
-              if (background  !== undefined) el.style.background   = background;
-              if (outline     !== undefined) el.style.outline      = outline;
-            });
+      try {
+        if (undoStack.length === 0) return;
+        const op = undoStack.pop();
+        const page = document.getElementById('pageLeft');
+        switch (op.type) {
+          // --- 付箋非表示（白色化）の取り消し ---
+          case 'sticky-hide': {
+            applyStickyHideUndo(op.targets, false);
+            break;
           }
-          break;
+          // --- 作成の取り消し：要素を削除 ---
+          case 'create': {
+            op.elements.forEach(el => el.remove());
+            deselectAllObjects();
+            closeDialog();
+            break;
+          }
+          // --- 削除の取り消し：要素を復元 ---
+          case 'delete': {
+            op.snapshots.forEach(snap => {
+              const el = document.createElement('div');
+              el.className = snap.className;
+              el.dataset.id = snap.id;
+              el.dataset.type = snap.type || '';
+              if (snap.savedData)   el.dataset.savedData = snap.savedData;
+              if (snap.groupId)     el.dataset.groupId   = snap.groupId;
+              if (snap.daimonId)    el.dataset.daimonId  = snap.daimonId;
+              if (snap.kotaeId)     el.dataset.kotaeId   = snap.kotaeId;
+              if (snap.kotaeOrigBg !== undefined) el.dataset.kotaeOrigBg = snap.kotaeOrigBg;
+              if (snap.zuId)        el.dataset.zuId      = snap.zuId;
+              if (snap.shomeiId)    el.dataset.shomeiId  = snap.shomeiId;
+              el.dataset.page = snap.pageNum || '1';
+              el.style.cssText = snap.styleCssText;
+              // 種別に応じてハンドラ・内容を設定
+              if (el.classList.contains('sticky-note')) {
+                addStickyClickHandler(el);
+                makeResizable(el);
+              } else if (el.classList.contains('daimon-btn')) {
+                el.textContent = '大問';
+                addDaimonClickHandler(el);
+              } else if (el.classList.contains('kotae-btn')) {
+                el.textContent = '答';
+                addKotaeClickHandler(el);
+              } else if (el.classList.contains('zu-btn')) {
+                el.textContent = '図';
+                addZuBtnClickHandler(el);
+              } else if (el.classList.contains('shomei-btn')) {
+                el.textContent = '証明';
+                addShomeiClickHandler(el);
+              } else {
+                // ann-object / ann-icon-obj
+                // savedData からラベルを再構築
+                try {
+                  const sd  = JSON.parse(snap.savedData || '{}');
+                  const cfg = ANNOTATION_TYPE_CONFIG?.[snap.type];
+                  if (el.classList.contains('ann-object')) {
+                    const span = document.createElement('span');
+                    span.className = 'ann-label';
+                    span.textContent = (sd.annLabel || '').trim() || cfg?.label || snap.type;
+                    el.appendChild(span);
+                  } else if (el.classList.contains('ann-icon-obj')) {
+                    el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${cfg?.iconSvg || ''}</svg>`;
+                  }
+                } catch (_) {}
+                addAnnClickHandler(el);
+                if (el.classList.contains('ann-object')) makeResizable(el);
+              }
+              makeDraggable(el);
+              page.appendChild(el);
+            });
+            // 削除時に解除した daimonId / kotaeId / shomeiId を付箋に再付与
+            if (op.linkedStickyChanges) {
+              op.linkedStickyChanges.forEach(({ el, daimonId, kotaeId, kotaeOrigBg, shomeiId, shomeiOrigBg, shomeiOutline, background, outline }) => {
+                if (daimonId    !== undefined) el.dataset.daimonId    = daimonId;
+                if (kotaeId     !== undefined) el.dataset.kotaeId     = kotaeId;
+                if (kotaeOrigBg !== undefined) el.dataset.kotaeOrigBg = kotaeOrigBg;
+                if (shomeiId    !== undefined) el.dataset.shomeiId    = shomeiId;
+                if (shomeiOrigBg !== undefined) el.dataset.shomeiOrigBg = shomeiOrigBg;
+                if (shomeiOutline !== undefined) el.dataset.shomeiOutline = shomeiOutline;
+                if (background  !== undefined) el.style.background   = background;
+                if (outline     !== undefined) el.style.outline      = outline;
+              });
+            }
+            break;
+          }
+          // --- 移動の取り消し：位置を元に戻す ---
+          case 'move': {
+            op.targets.forEach(({ el, prevLeft, prevTop }) => {
+              el.style.left = prevLeft + 'px';
+              el.style.top  = prevTop  + 'px';
+            });
+            updateAlignPanel();
+            break;
+          }
+          // --- リサイズの取り消し ---
+          case 'resize': {
+            const { el, prevLeft, prevTop, prevWidth, prevHeight } = op;
+            el.style.left   = prevLeft   + 'px';
+            el.style.top    = prevTop    + 'px';
+            el.style.width  = prevWidth  + 'px';
+            el.style.height = prevHeight + 'px';
+            updateAlignPanel();
+            break;
+          }
+          // --- プロパティ変更の取り消し ---
+          case 'prop': {
+            const { el, prevSavedData, prevStyleCssText, prevClassName, prevInnerHTML } = op;
+            if (prevSavedData    !== undefined) el.dataset.savedData = prevSavedData;
+            if (prevStyleCssText !== undefined) el.style.cssText = prevStyleCssText;
+            if (prevClassName    !== undefined) el.className = prevClassName;
+            if (prevInnerHTML    !== undefined) el.innerHTML = prevInnerHTML;
+            // innerHTML を戻したのでリサイズハンドルも再設定
+            reinitElement(el);
+            break;
+          }
+          // --- グループ化/解除の取り消し ---
+          case 'group': {
+            op.targets.forEach(({ el, prevGroupId }) => {
+              if (prevGroupId === undefined) delete el.dataset.groupId;
+              else                           el.dataset.groupId = prevGroupId;
+            });
+            break;
+          }
+          // --- 図オブジェクト+図ボタン作成の取り消し ---
+          case 'zu-create': {
+            op.obj.remove();
+            op.btn.remove();
+            break;
+          }
+          // --- 大問ボタン作成の取り消し ---
+          case 'daimon-create': {
+            op.btn.remove();
+            // 紐付けたすべての要素のdaimonIdを作成前の値に戻す
+            (op.linkedAll || []).forEach(({ el, prevDaimonId }) => {
+              if (prevDaimonId == null || prevDaimonId === '') delete el.dataset.daimonId;
+              else el.dataset.daimonId = prevDaimonId;
+            });
+            break;
+          }
+          // --- 答ボタン作成の取り消し ---
+          case 'kotae-create': {
+            op.btn.remove();
+            op.linkedStickies.forEach(({ el, prevKotaeId, prevBackground }) => {
+              if (prevKotaeId === undefined) delete el.dataset.kotaeId;
+              else                           el.dataset.kotaeId = prevKotaeId;
+              delete el.dataset.kotaeOrigBg;
+              el.style.background = prevBackground;
+            });
+            break;
+          }
+          // --- 証明ボタン作成の取り消し ---
+          case 'shomei-create': {
+            op.btn.remove();
+            op.linkedStickies.forEach(({ el, prevShomeiId, prevBackground }) => {
+              if (prevShomeiId === undefined) delete el.dataset.shomeiId;
+              else                            el.dataset.shomeiId = prevShomeiId;
+              delete el.dataset.shomeiOrigBg;
+              el.style.outline = '';
+              delete el.dataset.shomeiOutline;
+              el.style.background = prevBackground;
+            });
+            break;
+          }
         }
-
-        // --- 移動の取り消し：位置を元に戻す ---
-        case 'move': {
-          op.targets.forEach(({ el, prevLeft, prevTop }) => {
-            el.style.left = prevLeft + 'px';
-            el.style.top  = prevTop  + 'px';
-          });
-          updateAlignPanel();
-          break;
+        updateAnnotationVisibility();
+        updateStatus('操作を取り消しました');
+        // Undo の逆操作を Redo スタックに積む
+        redoStack.push(op);
+        if (redoStack.length > UNDO_MAX) redoStack.shift();
+      } catch (err) {
+        // エラー内容を右下デバッグUIに表示
+        const el = document.getElementById('undoDebug');
+        if (el) {
+          el.innerHTML += `<br><span style='color:#ff8888'>[Undo Error] ${err && err.message ? err.message : err}</span>`;
+          el.style.display = 'block';
         }
-
-        // --- リサイズの取り消し ---
-        case 'resize': {
-          const { el, prevLeft, prevTop, prevWidth, prevHeight } = op;
-          el.style.left   = prevLeft   + 'px';
-          el.style.top    = prevTop    + 'px';
-          el.style.width  = prevWidth  + 'px';
-          el.style.height = prevHeight + 'px';
-          updateAlignPanel();
-          break;
-        }
-
-        // --- プロパティ変更の取り消し ---
-        case 'prop': {
-          const { el, prevSavedData, prevStyleCssText, prevClassName, prevInnerHTML } = op;
-          if (prevSavedData    !== undefined) el.dataset.savedData = prevSavedData;
-          if (prevStyleCssText !== undefined) el.style.cssText = prevStyleCssText;
-          if (prevClassName    !== undefined) el.className = prevClassName;
-          if (prevInnerHTML    !== undefined) el.innerHTML = prevInnerHTML;
-          // innerHTML を戻したのでリサイズハンドルも再設定
-          reinitElement(el);
-          break;
-        }
-
-        // --- グループ化/解除の取り消し ---
-        case 'group': {
-          op.targets.forEach(({ el, prevGroupId }) => {
-            if (prevGroupId === undefined) delete el.dataset.groupId;
-            else                           el.dataset.groupId = prevGroupId;
-          });
-          break;
-        }
-
-        // --- 図オブジェクト+図ボタン作成の取り消し ---
-        case 'zu-create': {
-          op.obj.remove();
-          op.btn.remove();
-          break;
-        }
-
-        // --- 大問ボタン作成の取り消し ---
-        case 'daimon-create': {
-          op.btn.remove();
-          // 紐付けたすべての要素のdaimonIdを作成前の値に戻す
-          (op.linkedAll || []).forEach(({ el, prevDaimonId }) => {
-            if (prevDaimonId == null || prevDaimonId === '') delete el.dataset.daimonId;
-            else el.dataset.daimonId = prevDaimonId;
-          });
-          break;
-        }
-
-        // --- 答ボタン作成の取り消し ---
-        case 'kotae-create': {
-          op.btn.remove();
-          op.linkedStickies.forEach(({ el, prevKotaeId, prevBackground }) => {
-            if (prevKotaeId === undefined) delete el.dataset.kotaeId;
-            else                           el.dataset.kotaeId = prevKotaeId;
-            delete el.dataset.kotaeOrigBg;
-            el.style.background = prevBackground;
-          });
-          break;
-        }
-
-        // --- 証明ボタン作成の取り消し ---
-        case 'shomei-create': {
-          op.btn.remove();
-          op.linkedStickies.forEach(({ el, prevShomeiId, prevBackground }) => {
-            if (prevShomeiId === undefined) delete el.dataset.shomeiId;
-            else                            el.dataset.shomeiId = prevShomeiId;
-            delete el.dataset.shomeiOrigBg;
-            el.style.outline = '';
-            delete el.dataset.shomeiOutline;
-            el.style.background = prevBackground;
-          });
-          break;
-        }
+        throw err;
       }
-
-      updateAnnotationVisibility();
-      updateStatus('操作を取り消しました');
-      // Undo の逆操作を Redo スタックに積む
-      redoStack.push(op);
-      if (redoStack.length > UNDO_MAX) redoStack.shift();
     }
 
     /**
