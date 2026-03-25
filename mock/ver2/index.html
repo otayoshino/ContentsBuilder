@@ -7165,6 +7165,9 @@
         return { el, l, t, w, h };
       });
 
+      // Undo用: 整列前の位置を記録
+      const prevTargets = rects.map(({ el, l, t }) => ({ el, prevLeft: parseFloat(el.style.left) || l, prevTop: parseFloat(el.style.top) || t }));
+
       // 外接バウンディングボックス（全オブジェクトを包含する最小矩形）
       const minL   = Math.min(...rects.map(r => r.l));
       const maxR   = Math.max(...rects.map(r => r.l + r.w));
@@ -7173,16 +7176,34 @@
       const centerX = (minL + maxR) / 2;
       const centerY = (minT + maxB) / 2;
 
+      // 整列後の位置を計算し、Undo用にafter値も記録
+      const afterTargets = [];
       rects.forEach(({ el, l, t, w, h }) => {
+        let afterLeft = parseFloat(el.style.left) || l;
+        let afterTop  = parseFloat(el.style.top)  || t;
         switch (mode) {
-          case 'left':    el.style.left = minL + 'px';               break;
-          case 'centerH': el.style.left = (centerX - w / 2) + 'px'; break;
-          case 'right':   el.style.left = (maxR - w) + 'px';        break;
-          case 'top':     el.style.top  = minT + 'px';               break;
-          case 'centerV': el.style.top  = (centerY - h / 2) + 'px'; break;
-          case 'bottom':  el.style.top  = (maxB - h) + 'px';        break;
+          case 'left':    afterLeft = minL; break;
+          case 'centerH': afterLeft = centerX - w / 2; break;
+          case 'right':   afterLeft = maxR - w; break;
         }
+        switch (mode) {
+          case 'top':     afterTop = minT; break;
+          case 'centerV': afterTop = centerY - h / 2; break;
+          case 'bottom':  afterTop = maxB - h; break;
+        }
+        // 実際に移動する場合のみ記録
+        afterTargets.push({ el, afterLeft, afterTop });
+        el.style.left = afterLeft + 'px';
+        el.style.top  = afterTop  + 'px';
       });
+
+      // Undoスタックに積む（移動が発生した場合のみ）
+      const changed = prevTargets.some((t, i) => t.prevLeft !== afterTargets[i].afterLeft || t.prevTop !== afterTargets[i].afterTop);
+      if (changed) {
+        // prevTargetsとafterTargetsをマージしてpushUndo
+        const targets = prevTargets.map((t, i) => ({ el: t.el, prevLeft: t.prevLeft, prevTop: t.prevTop, afterLeft: afterTargets[i].afterLeft, afterTop: afterTargets[i].afterTop }));
+        pushUndo({ type: 'move', targets });
+      }
 
       const labelMap = { left:'水平左揃え', centerH:'水平中央揃え', right:'水平右揃え',
                          top:'垂直上揃え',  centerV:'垂直中央揃え',  bottom:'垂直下揃え' };
