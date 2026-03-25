@@ -3445,12 +3445,44 @@
         showToast('付箋を選択してください。');
         return;
       }
+      // Undo用: 操作前の背景色・fuhyoji属性を記録
+      const prevStates = [];
+      selectedStickySet.forEach(note => {
+        prevStates.push({
+          el: note,
+          prevBackground: note.style.background,
+          prevFuhyoji: note.dataset.fuhyoji
+        });
+      });
       // 選択中の付箋の背景色を白一色に変更し、専用フラグを付与する
       selectedStickySet.forEach(note => {
         note.style.background = '#ffffff';
         note.dataset.fuhyoji = '1'; // 「付箋非表示」ボタンで設定された付箋と識別するフラグ
       });
+      // Undoスタックに積む
+      pushUndo({ type: 'sticky-hide', targets: prevStates });
       updateStatus(`${selectedStickySet.size} 件の付箋を白色に変更しました`);
+        /**
+         * Undo/Redo用: 付箋非表示（白色化）操作の取り消し・やり直し
+         * @param {Array} targets - {el, prevBackground, prevFuhyoji}
+         * @param {boolean} redo - trueでやり直し、falseで取り消し
+         */
+        function applyStickyHideUndo(targets, redo) {
+          targets.forEach(({ el, prevBackground, prevFuhyoji }) => {
+            if (!el) return;
+            if (redo) {
+              el.style.background = '#ffffff';
+              el.dataset.fuhyoji = '1';
+            } else {
+              el.style.background = prevBackground || '';
+              if (prevFuhyoji === undefined) {
+                delete el.dataset.fuhyoji;
+              } else {
+                el.dataset.fuhyoji = prevFuhyoji;
+              }
+            }
+          });
+        }
     }
 
     function toggleStickyGroup() {
@@ -3533,6 +3565,11 @@
       const page = document.getElementById('pageLeft');
 
       switch (op.type) {
+        // --- 付箋非表示（白色化）の取り消し ---
+        case 'sticky-hide': {
+          applyStickyHideUndo(op.targets, false);
+          break;
+        }
         // --- 作成の取り消し：要素を削除 ---
         case 'create': {
           op.elements.forEach(el => el.remove());
@@ -3716,6 +3753,11 @@
       const page = document.getElementById('pageLeft');
 
       switch (op.type) {
+        // --- 付箋非表示（白色化）のやり直し ---
+        case 'sticky-hide': {
+          applyStickyHideUndo(op.targets, true);
+          break;
+        }
         // --- 作成の再適用：要素を再追加 ---
         case 'create': {
           op.elements.forEach(el => page.appendChild(el));
