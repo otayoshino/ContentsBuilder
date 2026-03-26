@@ -3663,6 +3663,11 @@
               el.style.left = prevLeft + 'px';
               el.style.top  = prevTop  + 'px';
             });
+            // Undo直後のapplyLiveUpdateキャッシュをリセット
+            applyLiveUpdate._prevX = undefined;
+            applyLiveUpdate._prevY = undefined;
+            applyLiveUpdate._prevW = undefined;
+            applyLiveUpdate._prevH = undefined;
             updateAlignPanel();
             break;
           }
@@ -3676,15 +3681,29 @@
             updateAlignPanel();
             break;
           }
-          // --- プロパティ変更の取り消し ---
+          // --- プロパティ変更の取り消し（複数対応） ---
           case 'prop': {
-            const { el, prevSavedData, prevStyleCssText, prevClassName, prevInnerHTML } = op;
-            if (prevSavedData    !== undefined) el.dataset.savedData = prevSavedData;
-            if (prevStyleCssText !== undefined) el.style.cssText = prevStyleCssText;
-            if (prevClassName    !== undefined) el.className = prevClassName;
-            if (prevInnerHTML    !== undefined) el.innerHTML = prevInnerHTML;
-            // innerHTML を戻したのでリサイズハンドルも再設定
-            reinitElement(el);
+            if (Array.isArray(op.targets)) {
+              op.targets.forEach(({ el, prevSavedData, prevStyleCssText, prevClassName, prevInnerHTML }) => {
+                if (prevSavedData    !== undefined) el.dataset.savedData = prevSavedData;
+                if (prevStyleCssText !== undefined) el.style.cssText = prevStyleCssText;
+                if (prevClassName    !== undefined) el.className = prevClassName;
+                if (prevInnerHTML    !== undefined) el.innerHTML = prevInnerHTML;
+                reinitElement(el);
+              });
+            } else {
+              const { el, prevSavedData, prevStyleCssText, prevClassName, prevInnerHTML } = op;
+              if (prevSavedData    !== undefined) el.dataset.savedData = prevSavedData;
+              if (prevStyleCssText !== undefined) el.style.cssText = prevStyleCssText;
+              if (prevClassName    !== undefined) el.className = prevClassName;
+              if (prevInnerHTML    !== undefined) el.innerHTML = prevInnerHTML;
+              reinitElement(el);
+            }
+            // Undo直後のapplyLiveUpdateキャッシュをリセット
+            applyLiveUpdate._prevX = undefined;
+            applyLiveUpdate._prevY = undefined;
+            applyLiveUpdate._prevW = undefined;
+            applyLiveUpdate._prevH = undefined;
             break;
           }
           // --- グループ化/解除の取り消し ---
@@ -3838,6 +3857,11 @@
       updateAnnotationVisibility();
       updateStatus('操作をやり直しました');
       updateAlignPanel();
+      // Redo直後のapplyLiveUpdateキャッシュをリセット
+      applyLiveUpdate._prevX = undefined;
+      applyLiveUpdate._prevY = undefined;
+      applyLiveUpdate._prevW = undefined;
+      applyLiveUpdate._prevH = undefined;
     }
 
     /**
@@ -4833,12 +4857,19 @@
       form.appendChild(colDd);
 
       // 選択中オブジェクトへの即時反映リスナーを登録
+      // サイドメニュー・ダイアログ両対応でUndoが積まれるよう、input/change両方でapplyLiveUpdateを呼ぶ
       ['annPosX', 'annPosY', 'annWidth', 'annHeight'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('input', () => applyLiveUpdate(type));
+        if (el) {
+          el.addEventListener('input', () => applyLiveUpdate(type));
+          el.addEventListener('change', () => applyLiveUpdate(type));
+        }
       });
       const colElForLive = document.getElementById('annColor');
-      if (colElForLive) colElForLive.addEventListener('change', () => applyLiveUpdate(type));
+      if (colElForLive) {
+        colElForLive.addEventListener('change', () => applyLiveUpdate(type));
+        colElForLive.addEventListener('input', () => applyLiveUpdate(type));
+      }
     }
 
     /**
@@ -4847,8 +4878,24 @@
      * @param {string} type - アノテーション種別
      */
     function applyLiveUpdate(type) {
+
       const allTargets = getSelectedObjects();
       if (allTargets.length === 0) return;
+
+      // Undo用: 変更前スナップショットを積む（初回または値が変わる直前のみ）
+      if (!applyLiveUpdate._undoPushed) {
+        // 単一選択時は1件、複数選択時は全件
+        const snapshots = allTargets.map(target => ({
+          el: target,
+          prevStyleCssText: target.style.cssText,
+          prevClassName: target.className,
+          prevSavedData: target.dataset.savedData,
+          prevInnerHTML: target.innerHTML
+        }));
+        pushUndo({ type: 'prop', targets: snapshots });
+        applyLiveUpdate._undoPushed = true;
+      }
+
 
       const x = parseFloat(document.getElementById('annPosX')?.value)  ?? 0;
       const y = parseFloat(document.getElementById('annPosY')?.value)  ?? 0;
@@ -4925,6 +4972,8 @@
       applyLiveUpdate._prevY = y;
       applyLiveUpdate._prevW = w;
       applyLiveUpdate._prevH = h;
+      // 入力確定時にUndo積み直しを許可
+      setTimeout(() => { applyLiveUpdate._undoPushed = false; }, 0);
     }
 
     /**
