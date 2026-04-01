@@ -4814,6 +4814,13 @@
         return;
       }
 
+      // ページ遷移オブジェクト：ドラッグ作成時もポップアップを表示して遷移先を設定させる
+      if (type === 'pagejump') {
+        pendingRect = { x, y, w, h };
+        openQuickCreateDialog(type, x + w / 2, y + h / 2, e.clientX, e.clientY);
+        return;
+      }
+
       // ドラッグ作成：ポップアップなし・マーカー形式で即時作成
       pendingRect = { x, y, w, h };
       const _specForm = document.getElementById('dialogFormSpecific');
@@ -5029,8 +5036,10 @@
       const h = Math.max(parseFloat(qcCommon?.querySelector('[id="annHeight"]')?.value) || 40,  10);
       closeQuickCreateDialog();
 
-      // クリック位置をオブジェクトの中央にして配置
-      pendingRect = { x: pageX - w / 2, y: pageY - h / 2, w, h };
+      // ドラッグ経由で pendingRect がセット済みの場合はそれを優先し、クリック経由はクリック位置を中央に配置
+      if (!pendingRect) {
+        pendingRect = { x: pageX - w / 2, y: pageY - h / 2, w, h };
+      }
       confirmAnnotation(type);
 
       // 注入した hidden input を二次防止のため後片付けで削除
@@ -7045,6 +7054,12 @@
       if (w < 10 && h < 10) {
         // クリック扱い：クイック作成ポップアップを表示
         openQuickCreateDialog(currentDrawType, start.x, start.y, e.clientX, e.clientY);
+        return;
+      }
+      // ページ遷移オブジェクト：ドラッグ作成時もポップアップを表示して遷移先を設定させる
+      if (currentDrawType === 'pagejump') {
+        pendingRect = { x, y, w, h };
+        openQuickCreateDialog(currentDrawType, start.x + w / 2, start.y + h / 2, e.clientX, e.clientY);
         return;
       }
       // ドラッグ作成：マーカー形式で即時作成
