@@ -4972,7 +4972,8 @@
       // DOM に追加してからフォームフィールドを生成（ID参照が必要なため）
       document.body.appendChild(popup);
 
-      buildCommonFields(document.getElementById('qcFormCommon'), type, prevData, null);
+      // ドラッグ経由（pendingRect がセット済み）の場合はそのサイズ・位置をフォームに初期値として反映する
+      buildCommonFields(document.getElementById('qcFormCommon'), type, prevData, pendingRect || null);
 
       if (type !== 'sticky') {
         buildSpecificFields(document.getElementById('qcFormSpecific'), type, prevData);
