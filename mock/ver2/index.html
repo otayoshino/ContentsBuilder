@@ -510,7 +510,8 @@
       background: #515661;
       overflow: hidden;
       display: flex;
-      /* align-items はデフォルト stretch を使用（#pageContainer が height:100% を確実に解決するため） */
+      align-items: center;
+      justify-content: center;
     }
 
     /* A-9: スライドナビゲーションボタン */
@@ -2343,6 +2344,7 @@
           </svg>
         </button>
         <div class="acc-body" id="accDetail">
+        <div id="sideDetailPanel">
           <!-- デフォルト：グレーアウト展示の付箋フォーム -->
           <div id="sideDetailEmpty">
             <div class="side-detail-grayed">
@@ -2395,7 +2397,7 @@
               <button class="dialog-btn ok"     style="display:none"></button>
             </div>
           </div>
-        </div>
+        </div><!-- /#sideDetailPanel -->
         </div><!-- /#accDetail -->
 
         <!-- A-4: 整列パネル アコーディオン化 -->
