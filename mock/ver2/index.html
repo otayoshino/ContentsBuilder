@@ -1349,6 +1349,26 @@
       pointer-events: none;
     }
 
+    /* ページ遷移オブジェクト（透明な矩形クリックエリア） */
+    .pagejump-obj {
+      position: absolute;
+      background: transparent;
+      z-index: 4;
+      box-sizing: border-box;
+      user-select: none;
+      min-width: 10px;
+      min-height: 10px;
+    }
+    body:not(.is-view-mode) .pagejump-obj {
+      outline: 2px dashed rgba(68,136,204,0.7);
+      cursor: move;
+    }
+    .pagejump-obj.is-selected {
+      outline: 2px solid #4488ff !important;
+      z-index: 20;
+    }
+    .is-view-mode .pagejump-obj { cursor: pointer; }
+
     /* 表示タイプ選択UI */
     .disp-type-row {
       display: flex;
@@ -2253,8 +2273,8 @@
               </div>
               <p>外部リンク</p>
             </li>
-            <!-- B-2: ページ遷移ボタン -->
-            <li onclick="openPageJumpDialog()" data-tip="ページ番号を指定してジャンプ">
+            <!-- B-2: ページ遷移ボタン（pagejumpオブジェクトを紙面上に配置するモードへ切り替え） -->
+            <li onclick="activateAnnotationMode('pagejump')" data-ann-type="pagejump" data-tip="ページ遷移エリアを配置">
               <div>
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 16h8v-2H8v2zm0-4h8v-2H8v2z"/>
@@ -2527,7 +2547,7 @@
           // B-6: 紙面サイズを取得（比率計算用）
           const pageW = page.offsetWidth  || 1;
           const pageH = page.offsetHeight || 1;
-          const elements = page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn, .zu-btn, .zu-obj, .kotae-btn, .shomei-btn');
+          const elements = page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn, .zu-btn, .zu-obj, .kotae-btn, .shomei-btn, .pagejump-obj');
           const data = Array.from(elements).map(el => {
             const left   = parseFloat(el.style.left)   || 0;
             const top    = parseFloat(el.style.top)    || 0;
@@ -2600,7 +2620,7 @@
               const pageW = page.offsetWidth  || 1;
               const pageH = page.offsetHeight || 1;
               // 既存アノテーションを全削除
-              page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn, .zu-btn, .zu-obj, .kotae-btn, .shomei-btn').forEach(el => el.remove());
+              page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn, .zu-btn, .zu-obj, .kotae-btn, .shomei-btn, .pagejump-obj').forEach(el => el.remove());
               arr.forEach(obj => {
                 const el = document.createElement('div');
                 el.className = obj.className;
@@ -3353,11 +3373,11 @@
             // 他の選択をすべて解除してこのボタンのみ選択
             selectedStickySet.forEach(n => n.classList.remove('is-selected'));
             selectedStickySet.clear();
-            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected')
+            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected')
               .forEach(a => a.classList.remove('is-selected'));
             btn.classList.add('is-selected');
           }
-          const count = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').length
+          const count = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected').length
                       + selectedStickySet.size;
           updateStatus(count > 1 ? `${count} 件のオブジェクトを選択中` : '大問ボタンを選択中');
           return;
@@ -3429,11 +3449,11 @@
           } else {
             selectedStickySet.forEach(n => n.classList.remove('is-selected'));
             selectedStickySet.clear();
-            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected')
+            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected')
               .forEach(a => a.classList.remove('is-selected'));
             btn.classList.add('is-selected');
           }
-          const count = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').length
+          const count = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected').length
                       + selectedStickySet.size;
           updateStatus(count > 1 ? `${count} 件のオブジェクトを選択中` : '図ボタンを選択中');
           return;
@@ -3464,11 +3484,11 @@
         } else {
           selectedStickySet.forEach(n => n.classList.remove('is-selected'));
           selectedStickySet.clear();
-          document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected')
+          document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected')
             .forEach(a => a.classList.remove('is-selected'));
           obj.classList.add('is-selected');
         }
-        const count = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').length
+        const count = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected').length
                     + selectedStickySet.size;
         updateStatus(count > 1 ? `${count} 件のオブジェクトを選択中` : '図オブジェクトを選択中');
         e.stopPropagation();
@@ -3545,11 +3565,11 @@
           } else {
             selectedStickySet.forEach(n => n.classList.remove('is-selected'));
             selectedStickySet.clear();
-            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected')
+            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected')
               .forEach(a => a.classList.remove('is-selected'));
             btn.classList.add('is-selected');
           }
-          const count = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').length
+          const count = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected').length
                       + selectedStickySet.size;
           updateStatus(count > 1 ? `${count} 件のオブジェクトを選択中` : '答ボタンを選択中');
           return;
@@ -3648,11 +3668,11 @@
           } else {
             selectedStickySet.forEach(n => n.classList.remove('is-selected'));
             selectedStickySet.clear();
-            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected')
+            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected')
               .forEach(a => a.classList.remove('is-selected'));
             btn.classList.add('is-selected');
           }
-          const count = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').length
+          const count = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected').length
                       + selectedStickySet.size;
           updateStatus(count > 1 ? `${count} 件のオブジェクトを選択中` : '証明ボタンを選択中');
           return;
@@ -4564,7 +4584,7 @@
     function deselectAllObjects() {
       selectedStickySet.forEach(n => n.classList.remove('is-selected'));
       selectedStickySet.clear();
-      document.querySelectorAll('.ann-object, .ann-icon-obj, .daimon-btn, .zu-btn, .zu-obj, .kotae-btn, .shomei-btn').forEach(a => a.classList.remove('is-selected'));
+      document.querySelectorAll('.ann-object, .ann-icon-obj, .daimon-btn, .zu-btn, .zu-obj, .kotae-btn, .shomei-btn, .pagejump-obj').forEach(a => a.classList.remove('is-selected'));
       selectedAnnotation = null;
       closeDialog();
     }
@@ -4602,6 +4622,11 @@
       },
       daimon: { label: '大問ボタン', color: null, iconSvg: '' },
       shomei: { label: '証明ボタン', color: null, iconSvg: '' },
+      // ページ遷移オブジェクト：透明な矩形クリックエリアで指定ページへ遷移
+      pagejump: {
+        label: 'ページ遷移', color: 'transparent',
+        iconSvg: '<path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 16h8v-2H8v2zm0-4h8v-2H8v2z"/>',
+      },
     };
 
     /** アノテーションオブジェクトの塗り色選択肢 */
@@ -5114,6 +5139,13 @@
       form.appendChild(colDt);
       form.appendChild(colDd);
 
+      // ページ遷移オブジェクトは塗り色を使用しないため非活性化
+      if (type === 'pagejump') {
+        colDt.classList.add('is-field-disabled');
+        colDd.classList.add('is-field-disabled');
+        colSel.disabled = true;
+      }
+
       // 選択中オブジェクトへの即時反映リスナーを登録
       // サイドメニュー・ダイアログ両対応でUndoが積まれるよう、input/change両方でapplyLiveUpdateを呼ぶ
       ['annPosX', 'annPosY', 'annWidth', 'annHeight'].forEach(id => {
@@ -5180,6 +5212,10 @@
           if (w > 0) target.style.width  = w + 'px';
           if (h > 0) target.style.height = h + 'px';
           target.style.background = color;
+        } else if (target.classList.contains('pagejump-obj')) {
+          // ページ遷移オブジェクト：背景は常に透明り、サイズのみ変更
+          if (w > 0) target.style.width  = w + 'px';
+          if (h > 0) target.style.height = h + 'px';
         } else if (!target.classList.contains('ann-icon-obj')) {
           const bgColor = ANN_COLOR_OPTIONS[colorIdx]?.value ?? '#aaa';
           if (w > 0) target.style.width  = w + 'px';
@@ -5213,6 +5249,10 @@
             if (dw !== 0) target.style.width  = Math.max(10, (parseFloat(target.style.width)  || 0) + dw) + 'px';
             if (dh !== 0) target.style.height = Math.max(10, (parseFloat(target.style.height) || 0) + dh) + 'px';
             target.style.background = color;
+          } else if (target.classList.contains('pagejump-obj')) {
+            // ページ遷移オブジェクト：背景は常に透明、サイズのみデルタ分変更
+            if (dw !== 0) target.style.width  = Math.max(10, (parseFloat(target.style.width)  || 0) + dw) + 'px';
+            if (dh !== 0) target.style.height = Math.max(10, (parseFloat(target.style.height) || 0) + dh) + 'px';
           } else if (!target.classList.contains('ann-icon-obj')) {
             // マーカー型：サイズをデルタ分変更（最小10px）、塗り色は絶対値適用
             const bgColor = ANN_COLOR_OPTIONS[colorIdx]?.value ?? '#aaa';
@@ -5246,6 +5286,21 @@
 
       if (type === 'sticky') {
         // 付箋固有：フィールドなし（内容入力は不要）
+        return;
+      }
+
+      if (type === 'pagejump') {
+        // ページ遷移固有：遷移先ページ番号のみ入力（表示タイプ選択なし）
+        const dt = document.createElement('dt');
+        dt.textContent = '遷移先ページ';
+        form.appendChild(dt);
+        const dd = document.createElement('dd');
+        dd.innerHTML = `<div style="display:flex; align-items:center; gap:6px;">
+          <input type="number" class="d-input d-input-sm" id="annTarget" min="1"
+            value="${savedData.annTarget || ''}" placeholder="1">
+          <span style="font-size:12px; color:#555;">ページ目</span>
+        </div>`;
+        form.appendChild(dd);
         return;
       }
 
@@ -5497,9 +5552,16 @@
       buildCommonFields(commonForm, type, savedData, initRect);
 
       // アイコン型オブジェクト選択時は変形・塗りフィールドをグレーアウト
-      const isIconObj = existingEl?.classList.contains('ann-icon-obj');
-      commonForm.querySelectorAll('[data-field-group="transform"], [data-field-group="fill"]').forEach(el => {
+      const isIconObj  = existingEl?.classList.contains('ann-icon-obj');
+      // ページ遷移オブジェクト選択時は塗りフィールドをグレーアウト
+      const isPagejump = type === 'pagejump';
+      commonForm.querySelectorAll('[data-field-group="transform"]').forEach(el => {
         el.classList.toggle('is-field-disabled', !!isIconObj);
+      });
+      commonForm.querySelectorAll('[data-field-group="fill"]').forEach(el => {
+        el.classList.toggle('is-field-disabled', !!isIconObj || isPagejump);
+        const sel = el.querySelector('select');
+        if (sel) sel.disabled = !!isIconObj || isPagejump;
       });
 
       // 種別固有フィールドを生成（サイドバーでは非表示だが confirmAnnotation が読み取るため常に生成）
@@ -5610,6 +5672,35 @@
           document.getElementById('pageLeft').appendChild(note);
           pushUndo({ type: 'create', elements: [note] });
           updateStatus('付箋を配置しました（クリックで解答の表示/非表示）');
+        }
+
+      } else if (type === 'pagejump') {
+        // --- ページ遷移オブジェクト（透明矩形）を作成 ---
+        if (!isUpdate) {
+          lastNewAnnData[type] = savedData;
+          const { x, y, w, h } = pendingRect;
+          const obj = document.createElement('div');
+          obj.className     = 'pagejump-obj';
+          obj.dataset.id    = ++annIdCounter;
+          obj.dataset.type  = 'pagejump';
+          obj.dataset.savedData = JSON.stringify(savedData);
+          obj.style.cssText = `left:${x}px; top:${y}px; width:${w}px; height:${h}px;`;
+          addPagejumpObjHandler(obj);
+          makeDraggable(obj);
+          makeResizable(obj);
+          obj.dataset.page = currentPage;
+          document.getElementById('pageLeft').appendChild(obj);
+          pushUndo({ type: 'create', elements: [obj] });
+          updateStatus('ページ遷移オブジェクトを配置しました（閲覧モードでクリックするとページ遷移します）');
+        } else {
+          // 更新：位置・サイズ・savedData を反映
+          pushUndo({ type: 'prop', el: existingEl, prevSavedData: existingEl.dataset.savedData, prevStyleCssText: existingEl.style.cssText });
+          if (savedData.annPosX  !== undefined) existingEl.style.left   = parseInt(savedData.annPosX,  10) + 'px';
+          if (savedData.annPosY  !== undefined) existingEl.style.top    = parseInt(savedData.annPosY,  10) + 'px';
+          if (savedData.annWidth !== undefined) existingEl.style.width  = parseInt(savedData.annWidth, 10) + 'px';
+          if (savedData.annHeight!== undefined) existingEl.style.height = parseInt(savedData.annHeight,10) + 'px';
+          existingEl.dataset.savedData = JSON.stringify(savedData);
+          updateStatus('ページ遷移オブジェクトを更新しました');
         }
 
       } else if (type === 'zu') {
@@ -5798,12 +5889,12 @@
             updateStatus(`付箋を ${selectedStickySet.size} 件選択中`);
           } else {
             const multiCount = selectedStickySet.size
-              + document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').length;
+              + document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected').length;
             if (multiCount > 1 && selectedStickySet.has(note)) {
               // 複数選択中に選択済み付箋をクリック：他の選択を解除してこの付箋のみ選択
               selectedStickySet.forEach(n => n.classList.remove('is-selected'));
               selectedStickySet.clear();
-              document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(a => a.classList.remove('is-selected'));
+              document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected').forEach(a => a.classList.remove('is-selected'));
               selectedStickySet.add(note);
               note.classList.add('is-selected');
               openAnnotationSettingsDialog('sticky', note);
@@ -5812,7 +5903,7 @@
               // 未選択オブジェクトクリック：全解除してこの付箋のみ選択
               selectedStickySet.forEach(n => n.classList.remove('is-selected'));
               selectedStickySet.clear();
-              document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(a => a.classList.remove('is-selected'));
+              document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected').forEach(a => a.classList.remove('is-selected'));
               selectedStickySet.add(note);
               note.classList.add('is-selected');
               openAnnotationSettingsDialog('sticky', note);
@@ -5871,6 +5962,69 @@
     }
 
     /**
+     * ページ遷移オブジェクトにクリックハンドラを設定する。
+     * 閲覧モード：クリックで指定ページへ遷移。
+     * 編集モード：クリックで選択、ダブルクリックで編集ポップアップを開く。
+     * @param {HTMLElement} el - pagejump-obj 要素
+     */
+    function addPagejumpObjHandler(el) {
+      // ダブルクリック：編集モード時に編集ポップアップを開く
+      el.addEventListener('dblclick', (e) => {
+        if (document.body.classList.contains('is-view-mode')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        openEditPopup(el);
+      });
+
+      el.addEventListener('click', (e) => {
+        // 閲覧モード：指定ページへ移動
+        if (document.body.classList.contains('is-view-mode')) {
+          e.stopPropagation();
+          try {
+            const sd = JSON.parse(el.dataset.savedData || '{}');
+            const target = parseInt(sd.annTarget, 10);
+            if (target >= 1 && target <= totalPages) {
+              currentPage = target;
+              updatePageDisplay();
+              updateStatus(`ページ ${target} へ移動しました`);
+            } else {
+              updateStatus('遷移先ページが設定されていません');
+            }
+          } catch (_) {}
+          return;
+        }
+
+        // 編集モード：オブジェクトを選択
+        e.stopPropagation();
+        if (e.shiftKey) {
+          if (el.classList.contains('is-selected')) {
+            el.classList.remove('is-selected');
+            const remaining = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .pagejump-obj.is-selected');
+            if (remaining.length === 0 && selectedStickySet.size === 0) closeDialog();
+          } else {
+            el.classList.add('is-selected');
+            openAnnotationSettingsDialog('pagejump', el);
+          }
+          const count = document.querySelectorAll(
+            '.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, ' +
+            '.zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected'
+          ).length + selectedStickySet.size;
+          updateStatus(`${count} 件のオブジェクトを選択中`);
+        } else {
+          selectedStickySet.forEach(n => n.classList.remove('is-selected'));
+          selectedStickySet.clear();
+          document.querySelectorAll(
+            '.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, ' +
+            '.zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected'
+          ).forEach(a => a.classList.remove('is-selected'));
+          el.classList.add('is-selected');
+          openAnnotationSettingsDialog('pagejump', el);
+          updateStatus('ページ遷移オブジェクトを選択中');
+        }
+      });
+    }
+
+    /**
      * アノテーション要素にクリックハンドラを設定する。
      * コピー（Alt+ドラッグ）時のクローン再初期化でも使用する。
      * @param {HTMLElement} ann - アノテーション要素
@@ -5899,12 +6053,12 @@
           updateStatus(`${count} 件のオブジェクトを選択中`);
         } else {
           const multiCount = selectedStickySet.size
-            + document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').length;
+            + document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected').length;
           if (multiCount > 1 && ann.classList.contains('is-selected')) {
             // 複数選択中に選択済みオブジェクトをクリック：他の選択を解除してこの要素のみ選択
             selectedStickySet.forEach(n => n.classList.remove('is-selected'));
             selectedStickySet.clear();
-            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(a => a.classList.remove('is-selected'));
+            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected').forEach(a => a.classList.remove('is-selected'));
             ann.classList.add('is-selected');
             openAnnotationSettingsDialog(type, ann);
             updateStatus(`${cfg?.label ?? type}を選択中`);
@@ -5912,7 +6066,7 @@
             // 未選択オブジェクトクリック：全解除してこの要素のみ選択
             selectedStickySet.forEach(n => n.classList.remove('is-selected'));
             selectedStickySet.clear();
-            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(a => a.classList.remove('is-selected'));
+            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected').forEach(a => a.classList.remove('is-selected'));
             ann.classList.add('is-selected');
             openAnnotationSettingsDialog(type, ann);
             updateStatus(`${cfg?.label ?? type}を選択中`);
@@ -6060,7 +6214,11 @@
      * @param {HTMLElement} el - 再初期化対象の要素
      */
     function reinitElement(el) {
-      if (el.classList.contains('sticky-note')) {
+      if (el.classList.contains('pagejump-obj')) {
+        // ページ遷移オブジェクト：専用ハンドラとリサイズを再設定
+        addPagejumpObjHandler(el);
+        makeResizable(el);
+      } else if (el.classList.contains('sticky-note')) {
         addStickyClickHandler(el);
         makeResizable(el);
       } else if (el.classList.contains('daimon-btn')) {
@@ -7015,7 +7173,7 @@
       document.querySelectorAll(
         '#pageLeft .sticky-note, #pageLeft .ann-object, #pageLeft .ann-icon-obj, ' +
         '#pageLeft .daimon-btn, #pageLeft .zu-btn, #pageLeft .zu-obj, ' +
-        '#pageLeft .kotae-btn, #pageLeft .shomei-btn'
+        '#pageLeft .kotae-btn, #pageLeft .shomei-btn, #pageLeft .pagejump-obj'
       ).forEach(el => {
         const elPage = parseInt(el.dataset.page || '1', 10);
         el.classList.toggle('ann-hidden-page', elPage !== currentPage);
@@ -7146,7 +7304,7 @@
      */
     function scaleAnnotations(ratio) {
       if (ratio === 1) return;
-      document.querySelectorAll('#pageLeft .sticky-note, #pageLeft .ann-object, #pageLeft .ann-icon-obj').forEach(el => {
+      document.querySelectorAll('#pageLeft .sticky-note, #pageLeft .ann-object, #pageLeft .ann-icon-obj, #pageLeft .pagejump-obj').forEach(el => {
         el.style.left = ((parseFloat(el.style.left) || 0) * ratio) + 'px';
         el.style.top  = ((parseFloat(el.style.top)  || 0) * ratio) + 'px';
         const w = parseFloat(el.style.width)  || el.offsetWidth;
@@ -7501,7 +7659,7 @@
     function getSelectedObjects() {
       const result = [];
       selectedStickySet.forEach(n => result.push(n));
-      document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(a => result.push(a));
+      document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected').forEach(a => result.push(a));
       return result;
     }
 
@@ -7522,13 +7680,13 @@
       if (!addToSel) {
         selectedStickySet.forEach(n => n.classList.remove('is-selected'));
         selectedStickySet.clear();
-        document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(a => a.classList.remove('is-selected'));
+        document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected, .pagejump-obj.is-selected').forEach(a => a.classList.remove('is-selected'));
       }
 
       // 現在ページのオブジェクトのみをチェックして矩形との交差判定
       // （他ページ非表示の .ann-hidden-page 要素は除外）
       const page = document.getElementById('pageLeft');
-      page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn, .zu-btn, .zu-obj, .kotae-btn, .shomei-btn').forEach(obj => {
+      page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn, .zu-btn, .zu-obj, .kotae-btn, .shomei-btn, .pagejump-obj').forEach(obj => {
         if (obj.classList.contains('ann-hidden-page')) return;
         const l = parseFloat(obj.style.left) || 0;
         const t = parseFloat(obj.style.top)  || 0;
