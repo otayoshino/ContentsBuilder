@@ -2,7 +2,8 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- B-5: DPIによるUI崩れ防止のためmaximum-scale追加 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ContentsBuilder モック</title>
   <!-- PDF.js CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -258,8 +259,11 @@
     /* ============================
        サイドバー（オーサリング）
     ============================ */
+    /* B-5: 幅をpx固定値で統一（DPI差異による崩れ防止） */
     .side.authoring {
       width: 270px;
+      min-width: 270px;
+      max-width: 270px;
       flex-shrink: 0;
       background: #353c47;
       display: flex;
@@ -333,8 +337,10 @@
       flex-wrap: wrap;
       gap: 8px;
       margin-bottom: 8px;
+      padding-top: 4px; /* A-1: ホバー時の見切れ防止 */
     }
 
+    /* A-1: パネルボタン基本スタイル */
     .side .panel ul li {
       display: flex;
       flex-direction: column;
@@ -346,26 +352,62 @@
       border-radius: 6px;
       cursor: pointer;
       padding-top: 4px;
-      transition: background 0.15s, opacity 0.2s;
+      transition: background 0.18s ease, box-shadow 0.18s ease, opacity 0.2s;
+      border: 1.5px solid transparent;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+      position: relative;
+      overflow: hidden;
     }
 
+    /* A-1: ホバー：box-shadowで浮き感 */
     .side .panel ul li:hover {
-      background: #f0f0f0;
+      background: #ffffff;
+      border-color: #c8c8c8;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.1);
     }
 
-    /* アクティブ状態（描画モード選択中） */
+    /* A-1: ホバー時：アイコン・テキストの色変化 */
+    .side .panel ul li:hover div svg {
+      fill: #2a6fcf;
+      transition: fill 0.18s ease;
+    }
+    .side .panel ul li:hover p {
+      color: #2a6fcf;
+      transition: color 0.18s ease;
+    }
+
+    /* A-1: クリック押下 */
+    .side .panel ul li:active {
+      transform: none;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      background: #dde8f8;
+      transition: box-shadow 0.08s ease, background 0.08s ease;
+    }
+
+    /* A-1: アクティブ選択中 */
     .side .panel ul li.is-ann-active {
       background: #4a88d8;
+      border-color: #3a6fc0;
+      box-shadow: 0 2px 8px rgba(74,136,216,0.35);
     }
     .side .panel ul li.is-ann-active:hover {
       background: #3a78c8;
+      border-color: #2a60b0;
+      box-shadow: 0 4px 12px rgba(74,136,216,0.45), 0 1px 3px rgba(74,136,216,0.2);
+      transform: none;
     }
-    .side .panel ul li.is-ann-active div svg {
-      fill: #fff;
+    .side .panel ul li.is-ann-active:active {
+      transform: none;
+      box-shadow: 0 1px 3px rgba(74,136,216,0.2);
     }
-    .side .panel ul li.is-ann-active p {
-      color: #fff;
-    }
+    .side .panel ul li.is-ann-active div svg { fill: #fff; color: #fff; }
+    .side .panel ul li.is-ann-active p { color: #fff; }
+    .side .panel ul li.is-ann-active:hover div svg { fill: #fff; }
+    .side .panel ul li.is-ann-active:hover p { color: #fff; }
+
+    /* A-1: SVG・テキストのtransition */
+    .side .panel ul li div svg { fill: #444; transition: fill 0.18s ease; }
+    .side .panel ul li p { transition: color 0.18s ease; }
 
     .side .panel ul li.is_disabled {
       opacity: 0.4;
@@ -380,10 +422,6 @@
       justify-content: center;
     }
 
-    .side .panel ul li div svg {
-      fill: #444;
-    }
-
     .side .panel ul li p {
       margin-top: 4px;
       color: #444;
@@ -396,11 +434,71 @@
       font-size: 11px;
     }
 
+    /* A-3: 縦組みレイアウト */
+    .side .panel ul.panel-stack {
+      flex-direction: column;
+    }
+    .side .panel ul.panel-stack li {
+      width: 100%;
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 10px;
+      padding: 0 12px;
+      height: 34px;
+    }
+    .side .panel ul.panel-stack li div { flex-shrink: 0; }
+    .side .panel ul.panel-stack li p { margin-top: 0; }
+
     /* パネルセパレータ（非表示） */
     .side .panel-sep {
       border: none;
       border-top: 1px solid #3a3f4a;
       margin: 8px 0;
+    }
+
+    /* A-4: アコーディオン化パネルタイトル */
+    .side .panel-title.is-accordion {
+      width: 100%;
+      box-sizing: border-box;
+      background: none;
+      border: none;
+      border-top: 1px solid #3a3f4a;
+      padding: 9px 0;
+      margin: 0;
+      cursor: pointer;
+      font-family: inherit;
+      letter-spacing: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-align: left;
+      transition: opacity 0.15s;
+    }
+    .side .panel-title.is-accordion:hover { opacity: 0.75; }
+    .side .panel-title.is-accordion.no-border { border-top: none; }
+
+    .acc-chevron {
+      margin-left: auto;
+      flex-shrink: 0;
+      transition: transform 0.22s ease;
+    }
+    .side .panel-title.is-accordion.is-closed .acc-chevron {
+      transform: rotate(-90deg);
+    }
+
+    .acc-body {
+      overflow: visible;
+      max-height: 2000px;
+      transition: max-height 0.3s ease, opacity 0.22s ease;
+      opacity: 1;
+    }
+    .acc-body.is-closed {
+      max-height: 0 !important;
+      opacity: 0;
+      overflow: hidden;
     }
 
     /* ============================
@@ -415,6 +513,30 @@
       align-items: center;
       justify-content: center;
     }
+
+    /* A-9: スライドナビゲーションボタン */
+    .slide-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 50;
+      width: 40px;
+      height: 64px;
+      background: rgba(0,0,0,0.25);
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, opacity 0.15s;
+      opacity: 0.5;
+    }
+    .slide-nav:hover { background: rgba(0,0,0,0.45); opacity: 1; }
+    .slide-nav.is-hidden { opacity: 0; pointer-events: none; }
+    .slide-nav--prev { left: 8px; }
+    .slide-nav--next { right: 8px; }
 
     /* ページコンテナ */
     .page-container {
@@ -1020,7 +1142,8 @@
       position: relative;
     }
 
-    [data-tip]:hover::after {
+    /* A-8: ツールチップをホバー0.8秒後にフェードイン表示 */
+    [data-tip]::after {
       content: attr(data-tip);
       position: absolute;
       bottom: calc(100% + 6px);
@@ -1035,6 +1158,11 @@
       border-radius: 4px;
       pointer-events: none;
       z-index: 100;
+      opacity: 0;
+      transition: opacity 0.1s ease 0.8s; /* 0.8秒後にフェードイン */
+    }
+    [data-tip]:hover::after {
+      opacity: 1;
     }
 
     /* ==========================
@@ -2048,41 +2176,28 @@
         </button>
 
         <div id="authoringPanels">
-        <p class="panel-title">
+        <!-- A-4: アコーディオン化・A-6: ボタン構成変更 -->
+        <button class="panel-title is-accordion no-border" onclick="toggleAcc('accAuthoring', this)">
           <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
             <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
           </svg>
           オーサリングパネル
-        </p>
-
+          <svg class="acc-chevron" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/>
+          </svg>
+        </button>
+        <div class="acc-body" id="accAuthoring">
         <div class="panel">
-          <ul>
-            <!-- ページリンク -->
-            <li onclick="activateAnnotationMode('pagelink')" data-tip="ページリンクを追加" data-ann-type="pagelink">
+          <!-- A-6: panel-stack縦組み、順序: 付箋・音声再生・動画再生・図ボタン・Plusファイル・ページリンク・外部リンク・ページ遷移 -->
+          <ul class="panel-stack">
+            <!-- 付箋 -->
+            <li onclick="activateAnnotationMode('sticky')" data-tip="付箋を追加" data-ann-type="sticky">
               <div>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
                 </svg>
               </div>
-              <p>ページリンク</p>
-            </li>
-            <!-- Plusファイル -->
-            <li onclick="activateAnnotationMode('plusfile')" data-tip="Plusファイルを追加" data-ann-type="plusfile">
-              <div>
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/>
-                </svg>
-              </div>
-              <p>Plusファイル</p>
-            </li>
-            <!-- 外部リンク -->
-            <li onclick="activateAnnotationMode('externallink')" data-tip="外部リンクを追加" data-ann-type="externallink">
-              <div>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
-                </svg>
-              </div>
-              <p>外部リンク</p>
+              <p>付箋</p>
             </li>
             <!-- 音声再生 -->
             <li onclick="activateAnnotationMode('audio')" data-tip="音声再生ボタンを追加" data-ann-type="audio">
@@ -2102,33 +2217,6 @@
               </div>
               <p>動画再生</p>
             </li>
-            <!-- 付箋 -->
-            <li onclick="activateAnnotationMode('sticky')" data-tip="付箋を追加" data-ann-type="sticky">
-              <div>
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-                </svg>
-              </div>
-              <p>付箋</p>
-            </li>
-            <!-- 大問ボタン作成 -->
-            <li onclick="createDaimonButton()" data-tip="選択中の付箋を一括表示/非表示する大問ボタンを作成">
-              <div>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-                </svg>
-              </div>
-              <p class="size_s">大問ボタン</p>
-            </li>
-            <!-- 答ボタン作成 -->
-            <li onclick="createKotaeButton()" data-tip="答ボタンを作成">
-              <div>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-                </svg>
-              </div>
-              <p class="size_s">答</p>
-            </li>
             <!-- 図ボタン作成 -->
             <li onclick="activateAnnotationMode('zu')" data-tip="図オブジェクトを作成" data-ann-type="zu">
               <div>
@@ -2138,7 +2226,101 @@
               </div>
               <p class="size_s">図ボタン</p>
             </li>
-            <!-- 証明ボタン作成 -->
+            <!-- Plusファイル -->
+            <li onclick="activateAnnotationMode('plusfile')" data-tip="Plusファイルを追加" data-ann-type="plusfile">
+              <div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/>
+                </svg>
+              </div>
+              <p>Plusファイル</p>
+            </li>
+            <!-- ページリンク -->
+            <li onclick="activateAnnotationMode('pagelink')" data-tip="ページリンクを追加" data-ann-type="pagelink">
+              <div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+                </svg>
+              </div>
+              <p>ページリンク</p>
+            </li>
+            <!-- 外部リンク -->
+            <li onclick="activateAnnotationMode('externallink')" data-tip="外部リンクを追加" data-ann-type="externallink">
+              <div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+                </svg>
+              </div>
+              <p>外部リンク</p>
+            </li>
+            <!-- B-2: ページ遷移ボタン -->
+            <li onclick="openPageJumpDialog()" data-tip="ページ番号を指定してジャンプ">
+              <div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 16h8v-2H8v2zm0-4h8v-2H8v2z"/>
+                </svg>
+              </div>
+              <p class="size_s">ページ遷移</p>
+            </li>
+          </ul>
+        </div>
+        </div><!-- /#accAuthoring -->
+
+        <!-- A-4: 付箋パーツ操作パネル アコーディオン化、A-7: ボタン構成変更 -->
+        <button class="panel-title is-accordion" onclick="toggleAcc('accStickyOps', this)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+          </svg>
+          付箋パーツ操作
+          <svg class="acc-chevron" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/>
+          </svg>
+        </button>
+        <div class="acc-body" id="accStickyOps">
+        <div class="panel">
+          <!-- A-7: panel-stack縦組み、順序: 大問・付箋グループ切替・付箋を隠す・答・証明 -->
+          <ul class="panel-stack">
+            <!-- 大問ボタン作成（A-6からここへ移動） -->
+            <li onclick="createDaimonButton()" data-tip="選択中の付箋を一括表示/非表示する大問ボタンを作成">
+              <div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                </svg>
+              </div>
+              <p class="size_s">大問ボタン</p>
+            </li>
+            <!-- 付箋グループ切替（A-2: SVGアイコン差し替え、fill統一） -->
+            <li onclick="toggleStickyGroup()" data-tip="付箋のグループ化／解除を切替">
+              <div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M2 1a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H2zm0 1h16v16H2V2z"/>
+                  <rect x="3.5" y="3.5" width="5.5" height="5.5" rx="1"/>
+                  <rect x="11"  y="3.5" width="5.5" height="5.5" rx="1"/>
+                  <rect x="3.5" y="11"  width="5.5" height="5.5" rx="1"/>
+                  <rect x="11"  y="11"  width="5.5" height="5.5" rx="1"/>
+                </svg>
+              </div>
+              <p class="size_s">付箋グループ切替</p>
+            </li>
+            <!-- A-5: 「付箋非表示」→「付箋を隠す」に名称変更 -->
+            <li onclick="onMisetteiBtnClick()" data-tip="非表示の付箋を表示・白色化">
+              <div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46A11.804 11.804 0 0 0 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78 3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>
+                </svg>
+              </div>
+              <p class="size_s">付箋を隠す</p>
+            </li>
+            <!-- 答ボタン作成（A-6からここへ移動） -->
+            <li onclick="createKotaeButton()" data-tip="答ボタンを作成">
+              <div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                </svg>
+              </div>
+              <p class="size_s">答</p>
+            </li>
+            <!-- 証明ボタン作成（A-6からここへ移動） -->
             <li onclick="createShomeiButton()" data-tip="証明ボタンを作成">
               <div>
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -2149,50 +2331,19 @@
             </li>
           </ul>
         </div>
+        </div><!-- /#accStickyOps -->
 
-        <hr class="panel-sep">
-
-        <!-- 付箋パーツ操作 -->
-        <p class="panel-title">
-          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-          </svg>
-          付箋パーツ操作
-        </p>
-
-        <div class="panel">
-          <ul>
-            <!-- 付箋グループ切替 -->
-            <li onclick="toggleStickyGroup()" data-tip="付箋のグループ化／解除を切替">
-              <div>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20 6h-2.18c.07-.44.18-.88.18-1.33C18 2.54 15.96.5 13.67.5c-1.31 0-2.4.56-3.33 1.45L9 3.28 7.67 1.95C6.74 1.06 5.65.5 4.33.5 2.04.5 0 2.54 0 4.67c0 .46.1.9.18 1.33H0v2h20V6zM9 6H2.5C2.22 4.84 3.18 2.5 4.33 2.5c.73 0 1.36.4 1.85.9L9 6zm11 0h-6.5l2.82-2.6c.49-.5 1.12-.9 1.85-.9 1.15 0 2.11 2.34 1.83 3.5zM0 19c0 1.1.9 2 2 2h8v3l3-3h5l2-2V8H0v11zm12-9l3 3-3 3v-2H6v-2h6v-2z"/>
-                </svg>
-              </div>
-              <p class="size_s">付箋グループ切替</p>
-            </li>
-            <!-- 付箋非表示ボタン -->
-            <li onclick="onMisetteiBtnClick()" data-tip="非表示の付箋を表示・白色化">
-              <div>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46A11.804 11.804 0 0 0 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78 3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>
-                </svg>
-              </div>
-              <p class="size_s">付箋非表示</p>
-            </li>
-          </ul>
-        </div>
-
-        <!-- 詳細設定パネル -->
-        <hr class="panel-sep">
-        <p class="panel-title">
+        <!-- A-4: 詳細設定パネル アコーディオン化 -->
+        <button class="panel-title is-accordion" onclick="toggleAcc('accDetail', this)">
           <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
             <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
           </svg>
           詳細設定
-        </p>
-
-        <div id="sideDetailPanel">
+          <svg class="acc-chevron" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/>
+          </svg>
+        </button>
+        <div class="acc-body" id="accDetail">
           <!-- デフォルト：グレーアウト展示の付箋フォーム -->
           <div id="sideDetailEmpty">
             <div class="side-detail-grayed">
@@ -2246,15 +2397,19 @@
             </div>
           </div>
         </div>
+        </div><!-- /#accDetail -->
 
-        <!-- 整列パネル -->
-        <hr class="panel-sep">
-        <p class="panel-title">
+        <!-- A-4: 整列パネル アコーディオン化 -->
+        <button class="panel-title is-accordion" onclick="toggleAcc('accAlign', this)">
           <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
             <path d="M4 22H2V2h2v20zm18-5H6v-2h16v2zm-4-4H6v-2h12v2zm4-4H6V7h16v2zm-4-4H6V3h12v2z"/>
           </svg>
           整列
-        </p>
+          <svg class="acc-chevron" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/>
+          </svg>
+        </button>
+        <div class="acc-body" id="accAlign">
         <div id="alignPanel" class="align-panel is-disabled">
           <div class="align-row">
             <span class="align-row-label">水平</span>
@@ -2309,6 +2464,7 @@
             </div>
           </div>
         </div>
+        </div><!-- /#accAlign -->
 
         </div><!-- /#authoringPanels -->
 
@@ -2319,6 +2475,18 @@
          ビューエリア（ページ表示）
     ======================= -->
     <div class="view" id="viewArea">
+
+      <!-- A-9: スライドナビゲーションボタン -->
+      <button class="slide-nav slide-nav--prev" id="slideNavPrev" onclick="changePage(-1)" title="前のページ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z"/>
+        </svg>
+      </button>
+      <button class="slide-nav slide-nav--next" id="slideNavNext" onclick="changePage(1)" title="次のページ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/>
+        </svg>
+      </button>
 
       <!-- ページ表示コンテナ -->
       <div class="page-container" id="pageContainer">
@@ -2351,11 +2519,19 @@
          */
         /**
          * アノテーションをJSONファイルとしてダウンロード保存する。
+         * B-6: ボタン位置・サイズを紙面に対する相対値（0〜1の比率）でも保存する。
          */
         function saveAnnotations() {
           const page = document.getElementById('pageLeft');
+          // B-6: 紙面サイズを取得（比率計算用）
+          const pageW = page.offsetWidth  || 1;
+          const pageH = page.offsetHeight || 1;
           const elements = page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn, .zu-btn, .zu-obj, .kotae-btn, .shomei-btn');
           const data = Array.from(elements).map(el => {
+            const left   = parseFloat(el.style.left)   || 0;
+            const top    = parseFloat(el.style.top)    || 0;
+            const width  = parseFloat(el.style.width)  || el.offsetWidth;
+            const height = parseFloat(el.style.height) || el.offsetHeight;
             const obj = {
               className: el.className,
               type: el.dataset.type,
@@ -2371,7 +2547,12 @@
               shomeiId: el.dataset.shomeiId,
               shomeiOrigBg: el.dataset.shomeiOrigBg,
               shomeiOutline: el.dataset.shomeiOutline,
-              fuhyoji: el.dataset.fuhyoji
+              fuhyoji: el.dataset.fuhyoji,
+              // B-6: 紙面相対比率（後方互換のため絶対値も残す）
+              xRatio: left   / pageW,
+              yRatio: top    / pageH,
+              wRatio: width  / pageW,
+              hRatio: height / pageH,
             };
             return obj;
           });
@@ -2403,6 +2584,7 @@
 
         /**
          * ファイル選択時の処理。JSONを読み込んでアノテーションを復元。
+         * B-6: 比率データが存在する場合は紙面サイズ×比率で位置・サイズを再計算する（後方互換あり）。
          */
         function handleAnnotationFile(event) {
           const file = event.target.files[0];
@@ -2413,6 +2595,9 @@
               const data = e.target.result;
               const arr = JSON.parse(data);
               const page = document.getElementById('pageLeft');
+              // B-6: 現在の紙面サイズを取得
+              const pageW = page.offsetWidth  || 1;
+              const pageH = page.offsetHeight || 1;
               // 既存アノテーションを全削除
               page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn, .zu-btn, .zu-obj, .kotae-btn, .shomei-btn').forEach(el => el.remove());
               arr.forEach(obj => {
@@ -2421,7 +2606,22 @@
                 el.dataset.type = obj.type;
                 el.dataset.id = obj.id;
                 if (obj.page) el.dataset.page = obj.page;
-                el.style.cssText = obj.style;
+                // B-6: 比率データがあれば絶対値に変換して適用、なければそのままstyle文字列を使用
+                if (obj.xRatio !== undefined && obj.yRatio !== undefined) {
+                  el.style.cssText = obj.style;
+                  el.style.left   = (obj.xRatio * pageW) + 'px';
+                  el.style.top    = (obj.yRatio * pageH) + 'px';
+                  if (obj.wRatio !== undefined) el.style.width  = (obj.wRatio * pageW) + 'px';
+                  if (obj.hRatio !== undefined) el.style.height = (obj.hRatio * pageH) + 'px';
+                  // B-6: リサイズ追従用にdata属性としても保存
+                  el.dataset.xRatio = obj.xRatio;
+                  el.dataset.yRatio = obj.yRatio;
+                  if (obj.wRatio !== undefined) el.dataset.wRatio = obj.wRatio;
+                  if (obj.hRatio !== undefined) el.dataset.hRatio = obj.hRatio;
+                } else {
+                  // 後方互換：旧形式（比率なし）はそのまま絶対値を使用
+                  el.style.cssText = obj.style;
+                }
                 if (obj.savedData) el.dataset.savedData = obj.savedData;
                 if (obj.groupId) el.dataset.groupId = obj.groupId;
                 if (obj.daimonId) el.dataset.daimonId = obj.daimonId;
@@ -2450,7 +2650,13 @@
                 } else if (el.classList.contains('daimon-btn')) {
                   el.textContent = '大問';
                 } else if (el.classList.contains('kotae-btn')) {
-                  el.textContent = '答';
+                  // B-1: 保存済みのkotaeLabelを復元する（なければデフォルト値を使用）
+                  let savedLabel = ANNOTATION_TYPE_CONFIG.kotae.labelOptions?.[0] || '答';
+                  try {
+                    const sd = JSON.parse(obj.savedData || '{}');
+                    if (sd.kotaeLabel) savedLabel = sd.kotaeLabel;
+                  } catch(_) {}
+                  el.textContent = savedLabel;
                 } else if (el.classList.contains('shomei-btn')) {
                   el.textContent = '証明';
                 } else if (el.classList.contains('zu-btn')) {
@@ -2788,6 +2994,43 @@
      * - オーサリングパネル・付箋パーツ操作を非表示
      * - ボタンは実際の挙動を行う
      */
+
+    /**
+     * A-4: アコーディオンパネルの開閉を切り替える。
+     * @param {string} bodyId - 開閉対象の acc-body 要素ID
+     * @param {HTMLElement} btn - クリックされたボタン要素
+     */
+    function toggleAcc(bodyId, btn) {
+      const body = document.getElementById(bodyId);
+      if (!body) return;
+      const closing = !body.classList.contains('is-closed');
+      body.classList.toggle('is-closed', closing);
+      btn.classList.toggle('is-closed', closing);
+    }
+
+    /**
+     * A-9: 前後ページ送りボタンからのページ変更。
+     * @param {number} delta - 変化量（+1: 次, -1: 前）
+     */
+    function changePage(delta) {
+      const newPage = currentPage + delta;
+      if (newPage >= 1 && newPage <= totalPages) {
+        currentPage = newPage;
+        updatePageDisplay();
+      }
+    }
+
+    /**
+     * B-2: ページ番号を指定してジャンプするダイアログを開く。
+     */
+    function openPageJumpDialog() {
+      const page = parseInt(prompt(`移動するページ番号を入力（1〜${totalPages}）`, currentPage), 10);
+      if (!isNaN(page) && page >= 1 && page <= totalPages) {
+        currentPage = page;
+        updatePageDisplay();
+      }
+    }
+
     function switchToViewMode() {
       // 描画モード中ならキャンセル
       if (currentDrawType) deactivateAnnotationMode();
@@ -3268,7 +3511,8 @@
       el.dataset.type     = 'kotae';
       el.dataset.id       = ++annIdCounter;
       el.dataset.kotaeId  = kid;
-      el.textContent      = '答';
+      // B-1: ラベルはlabelOptionsの先頭をデフォルトとして使用
+      el.textContent      = ANNOTATION_TYPE_CONFIG.kotae.labelOptions?.[0] ?? '答';
       el.style.left       = minLeft + 'px';
       el.style.top        = Math.max(0, minTop - 36) + 'px';
 
@@ -4351,7 +4595,10 @@
       },
       sticky: { label: '付箋', color: null, iconSvg: '' },
       zu:     { label: '図',  color: null, iconSvg: '' },
-      kotae:  { label: '答ボタン',  color: null, iconSvg: '' },
+      kotae:  { label: '答ボタン',  color: null, iconSvg: '',
+        // B-1: ボタンラベル選択肢（後日変更可能なよう定数管理）
+        labelOptions: ['答', '解答', '答え', 'Answer', '確認'],
+      },
       daimon: { label: '大問ボタン', color: null, iconSvg: '' },
       shomei: { label: '証明ボタン', color: null, iconSvg: '' },
     };
@@ -5002,7 +5249,19 @@
       }
 
       if (type === 'zu') {
-        // 図固有：フィールドなし（オブジェクトは描画で作成）
+        // B-3: 図固有：外部画像ファイル選択フィールドを追加
+        const imgDt = document.createElement('dt');
+        imgDt.textContent = '画像ファイル';
+        form.appendChild(imgDt);
+        const imgDd = document.createElement('dd');
+        imgDd.innerHTML = `<input type="file" id="zuImageFile" accept="image/*" style="font-size:11px; width:100%;">
+          <p class="field-note">※選択した画像を図オブジェクトに表示します</p>`;
+        imgDd.querySelector('#zuImageFile').addEventListener('change', (e) => {
+          // 図オブジェクトへの画像適用は confirmAnnotation 後に実行するため、ここではfileを保持
+          const file = e.target.files[0];
+          if (file) e.target._selectedFile = file;
+        });
+        form.appendChild(imgDd);
         return;
       }
 
@@ -5108,6 +5367,26 @@
           { value: '0', label: 'ページ内' },
           { value: '1', label: '別タブ' },
         ]));
+
+      } else if (type === 'kotae') {
+        // B-1: 答ボタン固有：ボタンラベル選択セレクトボックスを追加
+        const labelOptions = cfg.labelOptions || ['答', '解答', '答え', 'Answer', '確認'];
+        const currentLabel = savedData.kotaeLabel || labelOptions[0];
+        const labelDt = document.createElement('dt');
+        labelDt.textContent = 'ボタンラベル';
+        form.appendChild(labelDt);
+        const labelDd = document.createElement('dd');
+        const optionsHtml = labelOptions.map(v =>
+          `<option value="${v}"${v === currentLabel ? ' selected' : ''}>${v}</option>`
+        ).join('');
+        labelDd.innerHTML = `<div class="d-select-wrap">
+          <select class="d-select" id="kotaeLabelSelect">${optionsHtml}</select>
+        </div>`;
+        // 選択変更時にボタンの表示テキストへ即時反映
+        labelDd.querySelector('#kotaeLabelSelect').addEventListener('change', (e) => {
+          if (window._currentKotaeEl) window._currentKotaeEl.textContent = e.target.value;
+        });
+        form.appendChild(labelDd);
       }
     }
 
@@ -5178,6 +5457,8 @@
      */
     function openAnnotationSettingsDialog(type, existingEl = null) {
       lastDetailType = type;  // 最後に表示した種別を履歴保持
+      // B-1: 答ボタン編集時に対象要素を保持（ラベル即時反映用）
+      window._currentKotaeEl = (type === 'kotae' && existingEl) ? existingEl : null;
       // デルタ計算の基準値をリセット（新たな選択に備える）
       applyLiveUpdate._prevX = undefined;
       applyLiveUpdate._prevY = undefined;
@@ -5365,6 +5646,12 @@
 
           pushUndo({ type: 'zu-create', obj, btn });
           updateStatus('図オブジェクトと図ボタンを作成しました');
+          // B-3: 画像ファイルが選択されていれば図オブジェクトに適用
+          const zuImageInput = document.getElementById('zuImageFile');
+          if (zuImageInput && zuImageInput._selectedFile) {
+            handleZuImageUpload(zuImageInput, obj);
+            zuImageInput._selectedFile = null;
+          }
         }
 
       } else {
@@ -5461,6 +5748,26 @@
      * @param {HTMLElement} el
      * @param {string} excludeSelector - ドラッグを除外する子要素セレクタ
      */
+    /**
+     * B-3: 図ボタンへの外部画像読み込み処理。
+     * FileReader APIでBase64変換し、対象要素の背景として適用しdataset.imageに保存する。
+     * @param {HTMLInputElement} input - ファイル選択input要素
+     * @param {HTMLElement} targetEl   - 画像を適用するzu-obj要素
+     */
+    function handleZuImageUpload(input, targetEl) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        targetEl.dataset.image = e.target.result;
+        targetEl.style.backgroundImage = `url(${e.target.result})`;
+        targetEl.style.backgroundSize = 'contain';
+        targetEl.style.backgroundRepeat = 'no-repeat';
+        targetEl.style.backgroundPosition = 'center';
+      };
+      reader.readAsDataURL(file);
+    }
+
     /**
      * 付箋要素にクリックハンドラを設定する。
      * コピー（Alt+ドラッグ）時のクローン再初期化でも使用する。
@@ -6693,6 +7000,11 @@
       }
       // 現在ページのアノテーションのみ表示する
       updateAnnotationVisibility();
+      // A-9: スライドナビゲーションボタンの表示制御
+      const slideNavPrev = document.getElementById('slideNavPrev');
+      const slideNavNext = document.getElementById('slideNavNext');
+      if (slideNavPrev) slideNavPrev.classList.toggle('is-hidden', currentPage <= 1);
+      if (slideNavNext) slideNavNext.classList.toggle('is-hidden', currentPage >= totalPages);
     }
 
     /**
@@ -6706,6 +7018,23 @@
       ).forEach(el => {
         const elPage = parseInt(el.dataset.page || '1', 10);
         el.classList.toggle('ann-hidden-page', elPage !== currentPage);
+      });
+    }
+
+    /**
+     * B-6: ウィンドウリサイズ時に比率データを持つアノテーションを再配置する。
+     * data-x-ratio / data-y-ratio / data-w-ratio / data-h-ratio を参照して絶対位置に変換する。
+     */
+    function repositionAnnotationsByRatio() {
+      const pageEl = document.getElementById('pageLeft');
+      if (!pageEl) return;
+      const pageW = pageEl.offsetWidth;
+      const pageH = pageEl.offsetHeight;
+      pageEl.querySelectorAll('[data-x-ratio]').forEach(el => {
+        el.style.left   = (parseFloat(el.dataset.xRatio) * pageW) + 'px';
+        el.style.top    = (parseFloat(el.dataset.yRatio) * pageH) + 'px';
+        if (el.dataset.wRatio) el.style.width  = (parseFloat(el.dataset.wRatio) * pageW) + 'px';
+        if (el.dataset.hRatio) el.style.height = (parseFloat(el.dataset.hRatio) * pageH) + 'px';
       });
     }
 
@@ -6823,6 +7152,13 @@
         const h = parseFloat(el.style.height) || el.offsetHeight;
         el.style.width  = (w * ratio) + 'px';
         el.style.height = (h * ratio) + 'px';
+      });
+      // B-4: zu-objも同様にスケーリング対象に追加
+      document.querySelectorAll('#pageLeft .zu-obj').forEach(el => {
+        el.style.left   = ((parseFloat(el.style.left)   || 0) * ratio) + 'px';
+        el.style.top    = ((parseFloat(el.style.top)    || 0) * ratio) + 'px';
+        el.style.width  = ((parseFloat(el.style.width)  || el.offsetWidth)  * ratio) + 'px';
+        el.style.height = ((parseFloat(el.style.height) || el.offsetHeight) * ratio) + 'px';
       });
     }
 
@@ -7354,6 +7690,8 @@
       if (oldW > 0 && newW !== oldW) {
         scaleAnnotations(newW / oldW);
       }
+      // B-6: 比率ベースのアノテーションをリサイズ後に再配置
+      repositionAnnotationsByRatio();
     });
 
     /* ============================
