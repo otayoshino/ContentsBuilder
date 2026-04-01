@@ -7298,6 +7298,8 @@
 
       updateAlignPanel();
       updateStatus('表示フィット: ' + { page: 'ページ全体', height: '高さ', width: '幅' }[mode]);
+      // ページCSSサイズ変更後にPDFcanvasを新サイズで再描画
+      if (pdfDoc) renderPage(currentPage);
     }
 
     /* ============================
@@ -7319,6 +7321,17 @@
 
       // ナビ内ボタンのツールチップ更新
       if (toggleBtn) toggleBtn.dataset.tip = isHidden ? 'ナビを展開する' : 'ナビを折りたたむ';
+
+      // ナビ高さ変化後にビューエリアサイズが変わるため、ページサイズを再計算してcanvasを再描画
+      requestAnimationFrame(() => {
+        const page = document.getElementById('pageLeft');
+        const oldW = page.offsetWidth;
+        resizePage();
+        const newW = page.offsetWidth;
+        if (oldW > 0 && newW !== oldW) scaleAnnotations(newW / oldW);
+        repositionAnnotationsByRatio();
+        if (pdfDoc) renderPage(currentPage);
+      });
     }
 
     /* ============================
@@ -7690,6 +7703,8 @@
       const newW = page.offsetWidth;
       if (oldW > 0 && newW !== oldW) {
         scaleAnnotations(newW / oldW);
+        // ページCSSサイズ変更後にPDFcanvasを新サイズで再描画
+        if (pdfDoc) renderPage(currentPage);
       }
       // B-6: 比率ベースのアノテーションをリサイズ後に再配置
       repositionAnnotationsByRatio();
