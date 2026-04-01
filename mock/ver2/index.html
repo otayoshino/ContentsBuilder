@@ -3886,6 +3886,10 @@
               } else if (el.classList.contains('shomei-btn')) {
                 el.textContent = '証明';
                 addShomeiClickHandler(el);
+              } else if (el.classList.contains('pagejump-obj')) {
+                // ページ遷移オブジェクト：内容なし・専用ハンドラを設定
+                addPagejumpObjHandler(el);
+                makeResizable(el);
               } else {
                 // ann-object / ann-icon-obj
                 // savedData からラベルを再構築
@@ -6710,6 +6714,18 @@
           });
         });
 
+        // ページ遷移オブジェクトのスナップショット
+        document.querySelectorAll('.pagejump-obj.is-selected').forEach(pj => {
+          deleteSnapshots.push({
+            className:    pj.className.replace(/\bis-selected\b/g, '').trim(),
+            id:           pj.dataset.id,
+            type:         'pagejump',
+            savedData:    pj.dataset.savedData,
+            styleCssText: pj.style.cssText,
+            pageNum:      pj.dataset.page || '1',
+          });
+        });
+
         // 各種ボタンのスナップショット
         document.querySelectorAll('.daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(btn => {
           deleteSnapshots.push({
@@ -6825,6 +6841,12 @@
             });
           }
           btn.remove();
+          deleted++;
+        });
+
+        // 選択中のページ遷移オブジェクトを削除
+        document.querySelectorAll('.pagejump-obj.is-selected').forEach(pj => {
+          pj.remove();
           deleted++;
         });
 
