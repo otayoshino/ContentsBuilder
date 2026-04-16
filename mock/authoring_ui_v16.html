@@ -2474,14 +2474,27 @@
          */
         function saveAnnotations() {
           const page = document.getElementById('pageLeft');
+          const pageRect = page.getBoundingClientRect();
           const elements = page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn, .zu-btn, .zu-obj, .kotae-btn, .shomei-btn');
           const data = Array.from(elements).map(el => {
+            // px値取得
+            const left = parseFloat(el.style.left) || 0;
+            const top = parseFloat(el.style.top) || 0;
+            const width = parseFloat(el.style.width) || el.offsetWidth;
+            const height = parseFloat(el.style.height) || el.offsetHeight;
+            // %変換
+            const leftPct = (left / pageRect.width) * 100;
+            const topPct = (top / pageRect.height) * 100;
+            const widthPct = (width / pageRect.width) * 100;
+            const heightPct = (height / pageRect.height) * 100;
+            // styleを%で構築
+            const style = `left:${leftPct}%;top:${topPct}%;width:${widthPct}%;height:${heightPct}%;`;
             const obj = {
               className: el.className,
               type: el.dataset.type,
               id: el.dataset.id,
               page: el.dataset.page,
-              style: el.style.cssText,
+              style: style,
               savedData: el.dataset.savedData || '',
               groupId: el.dataset.groupId,
               daimonId: el.dataset.daimonId,
@@ -2533,6 +2546,7 @@
               const data = e.target.result;
               const arr = JSON.parse(data);
               const page = document.getElementById('pageLeft');
+              const pageRect = page.getBoundingClientRect();
               // 既存アノテーションを全削除
               page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn, .zu-btn, .zu-obj, .kotae-btn, .shomei-btn').forEach(el => el.remove());
               arr.forEach(obj => {
@@ -2541,7 +2555,20 @@
                 el.dataset.type = obj.type;
                 el.dataset.id = obj.id;
                 if (obj.page) el.dataset.page = obj.page;
-                el.style.cssText = obj.style;
+                // --- %→px変換 ---
+                if (obj.style) {
+                  // left/top/width/height の%値を抽出
+                  const leftMatch = obj.style.match(/left:([\d.]+)%/);
+                  const topMatch = obj.style.match(/top:([\d.]+)%/);
+                  const widthMatch = obj.style.match(/width:([\d.]+)%/);
+                  const heightMatch = obj.style.match(/height:([\d.]+)%/);
+                  let styleStr = '';
+                  if (leftMatch) styleStr += `left:${(parseFloat(leftMatch[1]) * pageRect.width / 100)}px;`;
+                  if (topMatch) styleStr += `top:${(parseFloat(topMatch[1]) * pageRect.height / 100)}px;`;
+                  if (widthMatch) styleStr += `width:${(parseFloat(widthMatch[1]) * pageRect.width / 100)}px;`;
+                  if (heightMatch) styleStr += `height:${(parseFloat(heightMatch[1]) * pageRect.height / 100)}px;`;
+                  el.style.cssText = styleStr;
+                }
                 if (obj.savedData) el.dataset.savedData = obj.savedData;
                 if (obj.groupId) el.dataset.groupId = obj.groupId;
                 if (obj.daimonId) el.dataset.daimonId = obj.daimonId;
