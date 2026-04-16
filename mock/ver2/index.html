@@ -1136,19 +1136,10 @@
     }
 
     /* ============================
-       ツールチップ
+       ツールチップ（JS制御・fixed配置）
     ============================ */
-    [data-tip] {
-      position: relative;
-    }
-
-    /* A-8: ツールチップをホバー0.8秒後にフェードイン表示 */
-    [data-tip]::after {
-      content: attr(data-tip);
-      position: absolute;
-      bottom: calc(100% + 6px);
-      left: 50%;
-      transform: translateX(-50%);
+    #globalTooltip {
+      position: fixed;
       background: #222;
       color: #fff;
       font-size: 11px;
@@ -1157,12 +1148,10 @@
       padding: 4px 8px;
       border-radius: 4px;
       pointer-events: none;
-      z-index: 100;
+      z-index: 9999;
       opacity: 0;
-      transition: opacity 0.1s ease 0.8s; /* 0.8秒後にフェードイン */
-    }
-    [data-tip]:hover::after {
-      opacity: 1;
+      display: none;
+      transition: opacity 0.1s ease;
     }
 
     /* ==========================
@@ -2435,21 +2424,21 @@
           <div class="align-row">
             <span class="align-row-label">水平</span>
             <div class="align-btns">
-              <button class="align-btn" onclick="alignObjects('left')" title="水平左揃え">
+              <button class="align-btn" onclick="alignObjects('left')" data-tip="水平左揃え">
                 <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
                   <rect x="0" y="0" width="1.5" height="14"/>
                   <rect x="2" y="1"  width="6" height="4" rx="0.5"/>
                   <rect x="2" y="9" width="9" height="4" rx="0.5"/>
                 </svg>
               </button>
-              <button class="align-btn" onclick="alignObjects('centerH')" title="水平中央揃え">
+              <button class="align-btn" onclick="alignObjects('centerH')" data-tip="水平中央揃え">
                 <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
                   <rect x="7.25" y="0" width="1.5" height="14"/>
                   <rect x="3" y="1"  width="10" height="4" rx="0.5"/>
                   <rect x="4.5" y="9" width="7"  height="4" rx="0.5"/>
                 </svg>
               </button>
-              <button class="align-btn" onclick="alignObjects('right')" title="水平右揃え">
+              <button class="align-btn" onclick="alignObjects('right')" data-tip="水平右揃え">
                 <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
                   <rect x="14.5" y="0" width="1.5" height="14"/>
                   <rect x="8.5" y="1"  width="6" height="4" rx="0.5"/>
@@ -2461,21 +2450,21 @@
           <div class="align-row">
             <span class="align-row-label">垂直</span>
             <div class="align-btns">
-              <button class="align-btn" onclick="alignObjects('top')" title="垂直上揃え">
+              <button class="align-btn" onclick="alignObjects('top')" data-tip="垂直上揃え">
                 <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
                   <rect x="0" y="0" width="16" height="1.5"/>
                   <rect x="1"  y="2" width="4" height="6" rx="0.5"/>
                   <rect x="9" y="2" width="4" height="9" rx="0.5"/>
                 </svg>
               </button>
-              <button class="align-btn" onclick="alignObjects('centerV')" title="垂直中央揃え">
+              <button class="align-btn" onclick="alignObjects('centerV')" data-tip="垂直中央揃え">
                 <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
                   <rect x="0" y="6.25" width="16" height="1.5"/>
                   <rect x="1"  y="3.5" width="4" height="7" rx="0.5"/>
                   <rect x="9" y="2"   width="4" height="10" rx="0.5"/>
                 </svg>
               </button>
-              <button class="align-btn" onclick="alignObjects('bottom')" title="垂直下揃え">
+              <button class="align-btn" onclick="alignObjects('bottom')" data-tip="垂直下揃え">
                 <svg viewBox="0 0 16 14" width="22" height="19" fill="currentColor">
                   <rect x="0" y="12.5" width="16" height="1.5"/>
                   <rect x="1"  y="6" width="4" height="6.5" rx="0.5"/>
@@ -2498,12 +2487,12 @@
     <div class="view" id="viewArea">
 
       <!-- A-9: スライドナビゲーションボタン -->
-      <button class="slide-nav slide-nav--prev" id="slideNavPrev" onclick="changePage(-1)" title="前のページ">
+      <button class="slide-nav slide-nav--prev" id="slideNavPrev" onclick="changePage(-1)" data-tip="前のページ">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
           <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z"/>
         </svg>
       </button>
-      <button class="slide-nav slide-nav--next" id="slideNavNext" onclick="changePage(1)" title="次のページ">
+      <button class="slide-nav slide-nav--next" id="slideNavNext" onclick="changePage(1)" data-tip="次のページ">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
           <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/>
         </svg>
@@ -7945,7 +7934,56 @@
     // PDFを読み込む
     loadPDF(PDF_PATH);
 
+    // ============================
+    // ツールチップ（position:fixed でoverflow制限を回避）
+    // ============================
+    (function() {
+      const tip = document.createElement('div');
+      tip.id = 'globalTooltip';
+      document.body.appendChild(tip);
 
+      let timer = null;
+
+      function showTip(target) {
+        const text = target.getAttribute('data-tip');
+        if (!text) return;
+        tip.textContent = text;
+        tip.style.display = 'block';
+        tip.style.opacity = '0';
+
+        const rect = target.getBoundingClientRect();
+        const tw = tip.offsetWidth;
+        const th = tip.offsetHeight;
+        const gap = 6;
+
+        // 上に十分なスペースがあれば上表示、なければ下表示
+        let top = rect.top - th - gap;
+        if (top < 4) top = rect.bottom + gap;
+
+        // 横方向：中央揃えしてはみ出しをクランプ
+        let left = rect.left + rect.width / 2 - tw / 2;
+        left = Math.max(4, Math.min(left, window.innerWidth - tw - 4));
+
+        tip.style.top  = top  + 'px';
+        tip.style.left = left + 'px';
+        tip.style.opacity = '1';
+      }
+
+      document.addEventListener('mouseover', function(e) {
+        const target = e.target.closest('[data-tip]');
+        if (!target) return;
+        clearTimeout(timer);
+        timer = setTimeout(() => showTip(target), 600);
+      });
+
+      document.addEventListener('mouseout', function(e) {
+        const target = e.target.closest('[data-tip]');
+        if (!target) return;
+        clearTimeout(timer);
+        tip.style.opacity = '0';
+        tip.style.display = 'none';
+      });
+    })();
 
   </script>
 
