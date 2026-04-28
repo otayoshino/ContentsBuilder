@@ -1371,9 +1371,26 @@
       color: #555;
       font-weight: 700;
     }
+    .disp-type-preview--page-color {
+      width: 36px;
+      height: 22px;
+      border: 2px dashed rgba(68,114,196,0.5);
+      background: rgba(68,114,196,0.06);
+      border-radius: 3px;
+    }
     .disp-type-label {
       font-size: 11px;
       color: #444;
+    }
+    /* 紙面カラー型オブジェクト：編集モードは薄青破線枠、閲覧モードは白（不可視） */
+    body:not(.is-view-mode) .ann-object.dt-page-color {
+      background: rgba(68, 114, 196, 0.08) !important;
+      outline: 2px dashed rgba(68, 114, 196, 0.5);
+      outline-offset: -2px;
+    }
+    .is-view-mode .ann-object.dt-page-color {
+      background: #fff !important;
+      outline: none;
     }
 
     /* 位置・サイズ入力行 */
@@ -2580,7 +2597,7 @@
                 if (obj.shomeiOutline) el.dataset.shomeiOutline = obj.shomeiOutline;
                 if (obj.fuhyoji) el.dataset.fuhyoji = obj.fuhyoji;
                 // 内容再構築
-                if (el.classList.contains('ann-object')) {
+                if (el.classList.contains('ann-object') && !el.classList.contains('dt-page-color')) {
                   let label = '';
                   try {
                     const sd = JSON.parse(obj.savedData || '{}');
@@ -3785,7 +3802,7 @@
                 try {
                   const sd  = JSON.parse(snap.savedData || '{}');
                   const cfg = ANNOTATION_TYPE_CONFIG?.[snap.type];
-                  if (el.classList.contains('ann-object')) {
+                  if (el.classList.contains('ann-object') && !el.classList.contains('dt-page-color')) {
                     const span = document.createElement('span');
                     span.className = 'ann-label';
                     span.textContent = (sd.annLabel || '').trim() || cfg?.label || snap.type;
@@ -5169,6 +5186,14 @@
       dtDt.textContent = '表示タイプ';
       form.appendChild(dtDt);
       const dtDd = document.createElement('dd');
+      const pageColorOption = type === 'pagelink' ? `
+          <label class="disp-type-option${dispType === 'page-color' ? ' is-active' : ''}" id="dtOpt-page-color">
+            <div class="disp-type-top">
+              <input type="radio" name="annDisplayTypeRadio" value="page-color"${dispType === 'page-color' ? ' checked' : ''}>
+              <div class="disp-type-preview disp-type-preview--page-color"></div>
+            </div>
+            <span class="disp-type-label">紙面カラー</span>
+          </label>` : '';
       dtDd.innerHTML = `
         <div class="disp-type-row">
           <label class="disp-type-option${dispType === 'icon' ? ' is-active' : ''}" id="dtOpt-icon">
@@ -5187,6 +5212,7 @@
             </div>
             <span class="disp-type-label">マーカー</span>
           </label>
+          ${pageColorOption}
         </div>
         <input type="hidden" id="annDisplayType" value="${dispType}">
       `;
@@ -5194,8 +5220,10 @@
         radio.addEventListener('change', () => {
           // dtDd スコープで検索することでポップアップとサイドバーの ID 競合を防ぐ
           dtDd.querySelector('#annDisplayType').value = radio.value;
-          dtDd.querySelector('#dtOpt-icon').classList.toggle('is-active',   radio.value === 'icon');
-          dtDd.querySelector('#dtOpt-marker').classList.toggle('is-active', radio.value === 'marker');
+          dtDd.querySelector('#dtOpt-icon').classList.toggle('is-active',       radio.value === 'icon');
+          dtDd.querySelector('#dtOpt-marker').classList.toggle('is-active',     radio.value === 'marker');
+          const pcOpt = dtDd.querySelector('#dtOpt-page-color');
+          if (pcOpt) pcOpt.classList.toggle('is-active', radio.value === 'page-color');
         });
       });
       form.appendChild(dtDd);
@@ -5553,6 +5581,13 @@
             existingEl.style.height = '';
             existingEl.style.background = '';
             existingEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${cfg.iconSvg}</svg>`;
+          } else if (displayType === 'page-color') {
+            // 紙面カラー型：ラベルなしの透明ホットスポット
+            existingEl.className = 'ann-object dt-page-color';
+            existingEl.style.width      = w + 'px';
+            existingEl.style.height     = h + 'px';
+            existingEl.style.background = '';
+            existingEl.innerHTML = '';
           } else {
             // マーカー型に変更または絶対マーカー型のまま更新
             existingEl.className = 'ann-object';
@@ -5582,6 +5617,10 @@
             ann.className = 'ann-icon-obj';
             ann.style.cssText = `left:${x}px; top:${y}px;`;
             ann.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${cfg.iconSvg}</svg>`;
+          } else if (displayType === 'page-color') {
+            // 紙面カラー型：ラベルなしの透明ホットスポット
+            ann.className = 'ann-object dt-page-color';
+            ann.style.cssText = `left:${x}px; top:${y}px; width:${w}px; height:${h}px;`;
           } else {
             // マーカー型：矩形ラベル
             ann.className = 'ann-object';
@@ -5600,7 +5639,8 @@
           ann.dataset.page = currentPage;
           document.getElementById('pageLeft').appendChild(ann);
           pushUndo({ type: 'create', elements: [ann] });
-          updateStatus(`${cfg.label}を配置しました（${displayType === 'icon' ? 'アイコン' : 'マーカー'}型）`);
+          const dispLabel = displayType === 'icon' ? 'アイコン' : displayType === 'page-color' ? '紙面カラー' : 'マーカー';
+          updateStatus(`${cfg.label}を配置しました（${dispLabel}型）`);
         }
       }
 
