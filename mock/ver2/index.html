@@ -1356,6 +1356,27 @@
     }
     .is-view-mode .pagejump-obj { cursor: pointer; }
 
+    /* 透明（紙面色白）型：編集時は薄青破線枠、閲覧時は完全透明 */
+    body:not(.is-view-mode) .ann-object.dt-white-area {
+      background: transparent !important;
+      outline: 2px dashed rgba(68, 114, 196, 0.5);
+    }
+    .is-view-mode .ann-object.dt-white-area {
+      background: transparent !important;
+      outline: none;
+      cursor: pointer;
+    }
+    .ann-object.dt-white-area.is-selected {
+      outline: 2px solid #4488ff !important;
+    }
+    .disp-type-preview--white-area {
+      width: 36px;
+      height: 22px;
+      background: #ffffff;
+      border: 1.5px solid #ccc;
+      border-radius: 3px;
+    }
+
     /* 表示タイプ選択UI */
     .disp-type-row {
       display: flex;
@@ -2184,15 +2205,6 @@
               </div>
               <p>外部リンク</p>
             </li>
-            <!-- B-2: ページ遷移ボタン（pagejumpオブジェクトを紙面上に配置するモードへ切り替え） -->
-            <li onclick="activateAnnotationMode('pagejump')" data-ann-type="pagejump" data-tip="ページ遷移エリアを配置">
-              <div>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 16h8v-2H8v2zm0-4h8v-2H8v2z"/>
-                </svg>
-              </div>
-              <p class="size_s">ページ遷移</p>
-            </li>
           </ul>
         </div>
         </div><!-- /#accAuthoring -->
@@ -3020,10 +3032,14 @@
 
       switch (type) {
         case 'pagelink': {
-          const idx = parseInt(saved.annTarget ?? '0', 10);
-          const pages = ['1ページ', '2ページ', '10ページ', '50ページ'];
-          const target = pages[idx] ?? pages[0];
-          updateStatus(`ページリンク: ${target}へ移動`);
+          const target = parseInt(saved.annTarget, 10);
+          if (target >= 1 && target <= totalPages) {
+            currentPage = target;
+            updatePageDisplay();
+            updateStatus(`ページ ${target} へ移動しました`);
+          } else {
+            updateStatus('ページリンク: リンク先ページが設定されていません');
+          }
           break;
         }
         case 'plusfile': {
@@ -4894,8 +4910,8 @@
       form.appendChild(colDt);
       form.appendChild(colDd);
 
-      // ページ遷移オブジェクトは塗り色を使用しないため非活性化
-      if (type === 'pagejump') {
+      // ページ遷移オブジェクト・透明ページリンクは塗り色を使用しないため非活性化
+      if (type === 'pagejump' || (type === 'pagelink' && savedData.annDisplayType === 'white-area')) {
         colDt.classList.add('is-field-disabled');
         colDd.classList.add('is-field-disabled');
         colSel.disabled = true;
@@ -5062,6 +5078,7 @@
       dtDt.textContent = '表示タイプ';
       form.appendChild(dtDt);
       const dtDd = document.createElement('dd');
+      const isPagelink = type === 'pagelink';
       dtDd.innerHTML = `
         <div class="disp-type-row">
           <label class="disp-type-option${dispType === 'icon' ? ' is-active' : ''}" id="dtOpt-icon">
@@ -5080,15 +5097,35 @@
             </div>
             <span class="disp-type-label">マーカー</span>
           </label>
+          ${isPagelink ? `
+          <label class="disp-type-option${dispType === 'white-area' ? ' is-active' : ''}" id="dtOpt-white-area">
+            <div class="disp-type-top">
+              <input type="radio" name="annDisplayTypeRadio" value="white-area"${dispType === 'white-area' ? ' checked' : ''}>
+              <div class="disp-type-preview disp-type-preview--white-area"></div>
+            </div>
+            <span class="disp-type-label">透明</span>
+          </label>` : ''}
         </div>
         <input type="hidden" id="annDisplayType" value="${dispType}">
       `;
       dtDd.querySelectorAll('input[name="annDisplayTypeRadio"]').forEach(radio => {
         radio.addEventListener('change', () => {
+          const v = radio.value;
           // dtDd スコープで検索することでポップアップとサイドバーの ID 競合を防ぐ
-          dtDd.querySelector('#annDisplayType').value = radio.value;
-          dtDd.querySelector('#dtOpt-icon').classList.toggle('is-active',   radio.value === 'icon');
-          dtDd.querySelector('#dtOpt-marker').classList.toggle('is-active', radio.value === 'marker');
+          dtDd.querySelector('#annDisplayType').value = v;
+          dtDd.querySelector('#dtOpt-icon').classList.toggle('is-active',   v === 'icon');
+          dtDd.querySelector('#dtOpt-marker').classList.toggle('is-active', v === 'marker');
+          const waOpt = dtDd.querySelector('#dtOpt-white-area');
+          if (waOpt) waOpt.classList.toggle('is-active', v === 'white-area');
+          // 透明選択時は塗り色フィールドを非活性化
+          const colorRoot = form.closest('.dialog-contents') || document.getElementById('sideDetailCommonWrap');
+          if (colorRoot) {
+            colorRoot.querySelectorAll('[data-field-group="fill"]').forEach(el => {
+              el.classList.toggle('is-field-disabled', v === 'white-area');
+              const sel = el.querySelector('select');
+              if (sel) sel.disabled = (v === 'white-area');
+            });
+          }
         });
       });
       form.appendChild(dtDd);
@@ -5289,15 +5326,17 @@
 
       // アイコン型オブジェクト選択時は変形・塗りフィールドをグレーアウト
       const isIconObj  = existingEl?.classList.contains('ann-icon-obj');
-      // ページ遷移オブジェクト選択時は塗りフィールドをグレーアウト
+      // ページ遷移オブジェクト・透明ページリンク選択時は塗りフィールドをグレーアウト
       const isPagejump = type === 'pagejump';
+      const savedDtForCheck = (() => { try { return JSON.parse(existingEl?.dataset?.savedData || '{}'); } catch { return {}; } })();
+      const isWhiteArea = type === 'pagelink' && savedDtForCheck.annDisplayType === 'white-area';
       commonForm.querySelectorAll('[data-field-group="transform"]').forEach(el => {
         el.classList.toggle('is-field-disabled', !!isIconObj);
       });
       commonForm.querySelectorAll('[data-field-group="fill"]').forEach(el => {
-        el.classList.toggle('is-field-disabled', !!isIconObj || isPagejump);
+        el.classList.toggle('is-field-disabled', !!isIconObj || isPagejump || isWhiteArea);
         const sel = el.querySelector('select');
-        if (sel) sel.disabled = !!isIconObj || isPagejump;
+        if (sel) sel.disabled = !!isIconObj || isPagejump || isWhiteArea;
       });
 
       // 種別固有フィールドを生成（サイドバーでは非表示だが confirmAnnotation が読み取るため常に生成）
@@ -5467,6 +5506,13 @@
             existingEl.style.height = '';
             existingEl.style.background = '';
             existingEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${cfg.iconSvg}</svg>`;
+          } else if (displayType === 'white-area') {
+            // 透明（紙面色白）型に変更または更新
+            existingEl.className = 'ann-object dt-white-area';
+            existingEl.style.width      = w + 'px';
+            existingEl.style.height     = h + 'px';
+            existingEl.style.background = '';
+            existingEl.innerHTML = '';
           } else {
             // マーカー型に変更または絶対マーカー型のまま更新
             existingEl.className = 'ann-object';
@@ -5496,6 +5542,10 @@
             ann.className = 'ann-icon-obj';
             ann.style.cssText = `left:${x}px; top:${y}px;`;
             ann.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${cfg.iconSvg}</svg>`;
+          } else if (displayType === 'white-area') {
+            // 透明（紙面色白）型：透明矩形ホットスポット
+            ann.className = 'ann-object dt-white-area';
+            ann.style.cssText = `left:${x}px; top:${y}px; width:${w}px; height:${h}px;`;
           } else {
             // マーカー型：矩形ラベル
             ann.className = 'ann-object';
@@ -5514,7 +5564,8 @@
           ann.dataset.page = currentPage;
           document.getElementById('pageLeft').appendChild(ann);
           pushUndo({ type: 'create', elements: [ann] });
-          updateStatus(`${cfg.label}を配置しました（${displayType === 'icon' ? 'アイコン' : 'マーカー'}型）`);
+          const dispLabel = displayType === 'icon' ? 'アイコン' : displayType === 'white-area' ? '透明' : 'マーカー';
+          updateStatus(`${cfg.label}を配置しました（${dispLabel}型）`);
         }
       }
 
