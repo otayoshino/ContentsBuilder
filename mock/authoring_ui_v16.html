@@ -545,6 +545,37 @@
       display: block;
     }
 
+    /* PDF ドロップオーバーレイ */
+    #pdfDropOverlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.92);
+      border: 3px dashed #aaa;
+      color: #666;
+      font-size: 18px;
+      gap: 12px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    #pdfDropOverlay.hidden {
+      display: none;
+    }
+
+    #pdfDropOverlay.drag-over {
+      background: rgba(66, 133, 244, 0.15);
+      border-color: #4285f4;
+      color: #4285f4;
+    }
+
+    #pdfDropOverlay .drop-icon {
+      font-size: 48px;
+    }
+
     /* 現在ページ以外のアノテーションは非表示 */
     .ann-hidden-page { display: none !important; }
 
@@ -1803,72 +1834,6 @@
       background: #3a5a90;
     }
 
-    /* 図ボタン（ページ上に配置するボタン） */
-    .zu-btn {
-      position: absolute;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 64px;
-      height: 28px;
-      padding: 0 12px;
-      background: #4a8a6a;
-      color: #fff;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      user-select: none;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.25);
-      z-index: 5;
-      box-sizing: border-box;
-    }
-    body:not(.is-view-mode) .zu-btn {
-      opacity: 0.8;
-      cursor: move;
-    }
-    .zu-btn.is-selected {
-      outline: 2px solid #ff5500;
-      outline-offset: 2px;
-    }
-    .is-view-mode .zu-btn {
-      cursor: pointer;
-    }
-    .is-view-mode .zu-btn:hover {
-      background: #3a7a5a;
-    }
-
-    /* 図オブジェクト（図ボタンに紐付く矩形エリア） */
-    .zu-obj {
-      position: absolute;
-      background: #ffffff;
-      z-index: 4;
-      box-sizing: border-box;
-      user-select: none;
-      min-width: 10px;
-      min-height: 10px;
-    }
-    /* 編集モード：赤破線アウトラインで存在を示す */
-    body:not(.is-view-mode) .zu-obj {
-      opacity: 0.7;
-      cursor: move;
-      outline: 1px dashed #e03030;
-    }
-    .zu-obj.is-selected {
-      outline: 2px solid #ff5500 !important;
-      outline-offset: 2px;
-    }
-    /* 閉覧モード：ポインターイベント無効（図ボタン専用で制御） */
-    .is-view-mode .zu-obj {
-      pointer-events: none;
-    }
-    .is-view-mode .zu-obj.state-visible {
-      opacity: 1;
-    }
-    .is-view-mode .zu-obj.state-hidden {
-      opacity: 0;
-    }
-
     /* 答ボタン（ページ上に配置するボタン） */
     .kotae-btn {
       position: absolute;
@@ -1945,7 +1910,6 @@
     }
     body:not(.is-view-mode) .daimon-btn,
     body:not(.is-view-mode) .kotae-btn,
-    body:not(.is-view-mode) .zu-btn,
     body:not(.is-view-mode) .shomei-btn {
       border: 1px dashed rgba(220, 40, 40, 0.65);
     }
@@ -2207,15 +2171,6 @@
               </div>
               <p>動画再生</p>
             </li>
-            <!-- 図ボタン -->
-            <li onclick="activateAnnotationMode('zu')" data-tip="図オブジェクトを作成" data-ann-type="zu">
-              <div>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M21 3H3C2 3 1 4 1 5v14c0 1.1.9 2 2 2h18c1 0 2-1 2-2V5c0-1-1-2-2-2zm0 16H3V5h18v14zm-5-7l-4 5.14L9 13l-3 4h12l-3-4z"/>
-                </svg>
-              </div>
-              <p class="size_s">図ボタン</p>
-            </li>
             <!-- Plusファイル -->
             <li onclick="activateAnnotationMode('plusfile')" data-tip="Plusファイルを追加" data-ann-type="plusfile">
               <div>
@@ -2465,6 +2420,10 @@
              onmousedown="onPageMouseDown(event)"
              onmousemove="onPageMouseMove(event)"
              onmouseup="onPageMouseUp(event)">
+          <div id="pdfDropOverlay">
+            <span class="drop-icon">📄</span>
+            <span>PDFをここにドロップ</span>
+          </div>
           <canvas id="pdfCanvas" class="page-content"></canvas>
         </div>
 
@@ -2492,7 +2451,7 @@
         function saveAnnotations() {
           const page = document.getElementById('pageLeft');
           const pageRect = page.getBoundingClientRect();
-          const elements = page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn, .zu-btn, .zu-obj, .kotae-btn, .shomei-btn');
+          const elements = page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn, .kotae-btn, .shomei-btn');
           const data = Array.from(elements).map(el => {
             // px値取得
             const left = parseFloat(el.style.left) || 0;
@@ -2565,7 +2524,7 @@
               const page = document.getElementById('pageLeft');
               const pageRect = page.getBoundingClientRect();
               // 既存アノテーションを全削除
-              page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn, .zu-btn, .zu-obj, .kotae-btn, .shomei-btn').forEach(el => el.remove());
+              page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn, .kotae-btn, .shomei-btn').forEach(el => el.remove());
               arr.forEach(obj => {
                 const el = document.createElement('div');
                 el.className = obj.className;
@@ -2642,8 +2601,6 @@
     let _currentRenderTask = null;
     /** 描画世代カウンター：非同期待機中に新しい renderPage が呼ばれたを検知する */
     let _renderVersion = 0;
-    /** PDFファイルのパス */
-    const PDF_PATH  = './book.pdf';
     let zoomLevel = 100;
     let selectedAnnotation = null;
     /** グレーアウトパネルで最後に表示した種別 */
@@ -2674,7 +2631,7 @@
         fields: [
           { id: 'annDisplayType' }, { id: 'annPosX' }, { id: 'annPosY' },
           { id: 'annWidth' }, { id: 'annHeight' }, { id: 'annColor' },
-          { id: 'annShowMode' }, { id: 'annUrl' },
+          { id: 'annUrl' },
         ]
       },
       audio: {
@@ -3211,36 +3168,31 @@
     function createDaimonButton() {
       if (document.body.classList.contains('is-view-mode')) return;
       const stickies = [...selectedStickySet];
-      // 選択中の証明ボタン・図ボタンも紐付け対象とする
+      // 選択中の証明ボタンも紐付け対象とする
       const shomeis = [...document.querySelectorAll('.shomei-btn.is-selected')];
-      const zuBtns  = [...document.querySelectorAll('.zu-btn.is-selected')];
 
-      if (stickies.length + shomeis.length + zuBtns.length < 1) {
-        showToast('付箋・証明ボタン・図ボタンを1件以上選択してください。');
+      if (stickies.length + shomeis.length < 1) {
+        showToast('付箋・証明ボタンを1件以上選択してください。');
         return;
       }
 
       const did = `daimon-${++daimonCounter}`;
 
-      // 証明ボタン傘下の付箋・図ボタン傘下の図オブジェクトを収集（間接制御対象）
+      // 証明ボタン傘下の付箋を収集（間接制御対象）
       const shomeiStickies = shomeis.flatMap(b => {
         const sid = b.dataset.shomeiId;
         return sid ? [...document.querySelectorAll(`.sticky-note[data-shomei-id="${sid}"]`)] : [];
       });
-      const zuObjs = zuBtns.flatMap(b => {
-        const zid = b.dataset.zuId;
-        return zid ? [...document.querySelectorAll(`.zu-obj[data-zu-id="${zid}"]`)] : [];
-      });
 
       // 紐付けるすべての要素を1つの配列にまとめ、Undo用に変更前のdaimonIdを保存
-      const allLinked = [...stickies, ...shomeis, ...shomeiStickies, ...zuBtns, ...zuObjs];
+      const allLinked = [...stickies, ...shomeis, ...shomeiStickies];
       const linkedUndo = allLinked.map(n => ({ el: n, prevDaimonId: n.dataset.daimonId }));
 
-      // 大問IDをすべての要素に一括付与（証明傘下の付箋・図オブジェクトも含む）
+      // 大問IDをすべての要素に一括付与（証明傘下の付箋も含む）
       allLinked.forEach(n => { n.dataset.daimonId = did; });
 
       // 配置位置：紐付けた全オブジェクトの左上の少し上
-      const posEls  = [...stickies, ...shomeis, ...zuBtns];
+      const posEls  = [...stickies, ...shomeis];
       const minLeft = Math.min(...posEls.map(n => parseFloat(n.style.left) || 0));
       const minTop  = Math.min(...posEls.map(n => parseFloat(n.style.top)  || 0));
 
@@ -3265,7 +3217,7 @@
         linkedAll: linkedUndo
       });
 
-      const total = stickies.length + shomeis.length + zuBtns.length;
+      const total = stickies.length + shomeis.length;
       updateStatus(`大問ボタンを作成しました（${total}件のオブジェクトに紐付け）`);
     }
 
@@ -3284,11 +3236,11 @@
             // 他の選択をすべて解除してこのボタンのみ選択
             selectedStickySet.forEach(n => n.classList.remove('is-selected'));
             selectedStickySet.clear();
-            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected')
+            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected')
               .forEach(a => a.classList.remove('is-selected'));
             btn.classList.add('is-selected');
           }
-          const count = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').length
+          const count = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').length
                       + selectedStickySet.size;
           updateStatus(count > 1 ? `${count} 件のオブジェクトを選択中` : '大問ボタンを選択中');
           return;
@@ -3332,77 +3284,6 @@
           }
         });
         updateStatus(allVisible ? '非表示にしました' : '表示しました');
-      });
-    }
-
-    /** 図IDカウンター */
-    let zuCounter = 0;
-
-    /**
-     * 図オブジェクト作成モードを起動する。
-     * 後方互換用（サイドバーボタンからの呼び出しを統一）。
-     */
-    function createZuButton() {
-      activateAnnotationMode('zu');
-    }
-
-    /**
-     * 図ボタンにクリックハンドラを設定する。
-     * 編集モード：選択/解除。閉覧モード：紐付き図オブジェクトの表示/非表示をトグルする。
-     * @param {HTMLElement} btn - 図ボタン要素
-     */
-    function addZuBtnClickHandler(btn) {
-      btn.addEventListener('click', (e) => {
-        if (!document.body.classList.contains('is-view-mode')) {
-          // 編集モード：選択処理
-          if (e.shiftKey) {
-            btn.classList.toggle('is-selected');
-          } else {
-            selectedStickySet.forEach(n => n.classList.remove('is-selected'));
-            selectedStickySet.clear();
-            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected')
-              .forEach(a => a.classList.remove('is-selected'));
-            btn.classList.add('is-selected');
-          }
-          const count = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').length
-                      + selectedStickySet.size;
-          updateStatus(count > 1 ? `${count} 件のオブジェクトを選択中` : '図ボタンを選択中');
-          return;
-        }
-
-        // 閉覧モード：紐付き図オブジェクトの表示/非表示をトグル
-        const zid = btn.dataset.zuId;
-        const target = document.querySelector(`.zu-obj[data-zu-id="${zid}"]`);
-        if (!target) return;
-        const isVisible = target.classList.contains('state-visible');
-        target.classList.toggle('state-visible', !isVisible);
-        target.classList.toggle('state-hidden',   isVisible);
-        updateStatus(isVisible ? '図を非表示にしました' : '図を表示しました');
-      });
-    }
-
-    /**
-     * 図オブジェクトにクリックハンドラを設定する。
-     * 編集モード：選択/解除。閉覧モード：クリック無効（図ボタンのみ制御）。
-     * @param {HTMLElement} obj - 図オブジェクト要素
-     */
-    function addZuObjClickHandler(obj) {
-      obj.addEventListener('click', (e) => {
-        if (document.body.classList.contains('is-view-mode')) return; // 閉覧モードは無反応
-        // 編集モード：選択処理
-        if (e.shiftKey) {
-          obj.classList.toggle('is-selected');
-        } else {
-          selectedStickySet.forEach(n => n.classList.remove('is-selected'));
-          selectedStickySet.clear();
-          document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected')
-            .forEach(a => a.classList.remove('is-selected'));
-          obj.classList.add('is-selected');
-        }
-        const count = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').length
-                    + selectedStickySet.size;
-        updateStatus(count > 1 ? `${count} 件のオブジェクトを選択中` : '図オブジェクトを選択中');
-        e.stopPropagation();
       });
     }
 
@@ -3475,11 +3356,11 @@
           } else {
             selectedStickySet.forEach(n => n.classList.remove('is-selected'));
             selectedStickySet.clear();
-            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected')
+            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected')
               .forEach(a => a.classList.remove('is-selected'));
             btn.classList.add('is-selected');
           }
-          const count = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').length
+          const count = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').length
                       + selectedStickySet.size;
           updateStatus(count > 1 ? `${count} 件のオブジェクトを選択中` : '答ボタンを選択中');
           return;
@@ -3578,11 +3459,11 @@
           } else {
             selectedStickySet.forEach(n => n.classList.remove('is-selected'));
             selectedStickySet.clear();
-            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected')
+            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected')
               .forEach(a => a.classList.remove('is-selected'));
             btn.classList.add('is-selected');
           }
-          const count = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').length
+          const count = document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').length
                       + selectedStickySet.size;
           updateStatus(count > 1 ? `${count} 件のオブジェクトを選択中` : '証明ボタンを選択中');
           return;
@@ -3790,9 +3671,6 @@
               } else if (el.classList.contains('kotae-btn')) {
                 el.textContent = '答';
                 addKotaeClickHandler(el);
-              } else if (el.classList.contains('zu-btn')) {
-                el.textContent = '図';
-                addZuBtnClickHandler(el);
               } else if (el.classList.contains('shomei-btn')) {
                 el.textContent = '証明';
                 addShomeiClickHandler(el);
@@ -3892,12 +3770,6 @@
               if (prevGroupId === undefined) delete el.dataset.groupId;
               else                           el.dataset.groupId = prevGroupId;
             });
-            break;
-          }
-          // --- 図オブジェクト+図ボタン作成の取り消し ---
-          case 'zu-create': {
-            op.obj.remove();
-            op.btn.remove();
             break;
           }
           // --- 大問ボタン作成の取り消し ---
@@ -4022,12 +3894,6 @@
           });
           break;
         }
-        // --- 図ボタン+図オブジェクト作成の再適用 ---
-        case 'zu-create': {
-          page.appendChild(op.obj);
-          page.appendChild(op.btn);
-          break;
-        }
         default: break;
       }
 
@@ -4062,9 +3928,9 @@
         n.classList.add('is-selected');
       });
       // その他オブジェクト
-      page.querySelectorAll('.ann-object:not(.ann-hidden-page), .ann-icon-obj:not(.ann-hidden-page), .daimon-btn:not(.ann-hidden-page), .zu-btn:not(.ann-hidden-page), .zu-obj:not(.ann-hidden-page), .kotae-btn:not(.ann-hidden-page), .shomei-btn:not(.ann-hidden-page)')
+      page.querySelectorAll('.ann-object:not(.ann-hidden-page), .ann-icon-obj:not(.ann-hidden-page), .daimon-btn:not(.ann-hidden-page), .kotae-btn:not(.ann-hidden-page), .shomei-btn:not(.ann-hidden-page)')
         .forEach(a => a.classList.add('is-selected'));
-      const total = page.querySelectorAll('.sticky-note:not(.ann-hidden-page), .ann-object:not(.ann-hidden-page), .ann-icon-obj:not(.ann-hidden-page), .daimon-btn:not(.ann-hidden-page), .zu-btn:not(.ann-hidden-page), .zu-obj:not(.ann-hidden-page), .kotae-btn:not(.ann-hidden-page), .shomei-btn:not(.ann-hidden-page)').length;
+      const total = page.querySelectorAll('.sticky-note:not(.ann-hidden-page), .ann-object:not(.ann-hidden-page), .ann-icon-obj:not(.ann-hidden-page), .daimon-btn:not(.ann-hidden-page), .kotae-btn:not(.ann-hidden-page), .shomei-btn:not(.ann-hidden-page)').length;
       updateStatus(`全オブジェクトを選択しました（${total}件）`);
       updateAlignPanel();
     }
@@ -4190,25 +4056,6 @@
           background: el.style.background || '',
           groupId:    el.dataset.groupId,
         };
-        // 図ボタン：zuId と紐付き zu-obj のスナップショットを保存
-        if (el.classList.contains('zu-btn') && el.dataset.zuId) {
-          snap.zuId = el.dataset.zuId;
-          const obj = document.querySelector(`.zu-obj[data-zu-id="${el.dataset.zuId}"]`);
-          if (obj) {
-            snap.linkedObj = {
-              className:  obj.className.replace(/\bis-selected\b/g, '').trim(),
-              left:       parseFloat(obj.style.left)   || 0,
-              top:        parseFloat(obj.style.top)    || 0,
-              width:      parseFloat(obj.style.width)  || obj.offsetWidth,
-              height:     parseFloat(obj.style.height) || obj.offsetHeight,
-              background: obj.style.background || '',
-            };
-          }
-        }
-        // zu-obj 単体コピー時は zuId を保存（zu-btn と一緒コピー時の重複排除用）
-        if (el.classList.contains('zu-obj') && el.dataset.zuId) {
-          snap.zuId = el.dataset.zuId;
-        }
         // 証明ボタン：shomeiId と紐付き付箋のスナップショットを保存
         if (el.classList.contains('shomei-btn') && el.dataset.shomeiId) {
           snap.shomeiId = el.dataset.shomeiId;
@@ -4265,12 +4112,6 @@
       // 貼り付け前の選択を全解除
       deselectAllObjects();
 
-      // zu-btn と同じ zuId を持つ zu-obj スナップは zu-btn 側で複製するためスキップ
-      const skipZuObjIds = new Set(
-        annClipboard
-          .filter(s => s.className?.includes('zu-btn') && s.zuId)
-          .map(s => s.zuId)
-      );
       // shomei-btn と同じ shomeiId を持つ付箋スナップは shomei-btn 側で複製するためスキップ
       const skipShomeiStickyIds = new Set(
         annClipboard
@@ -4288,48 +4129,6 @@
       annClipboard.forEach(snap => {
         const newLeft = snap.left + dx;
         const newTop  = snap.top  + dy;
-
-        // 図ボタン：新 zuId で zu-btn と zu-obj を独立複製
-        if (snap.className?.includes('zu-btn')) {
-          const newZuId = `zu-${++zuCounter}`;
-          const btn = document.createElement('div');
-          btn.dataset.id    = ++annIdCounter;
-          btn.dataset.type  = 'zu';
-          btn.dataset.zuId  = newZuId;
-          btn.className     = 'zu-btn';
-          btn.textContent   = '図';
-          btn.style.cssText = `left:${newLeft}px; top:${newTop}px;`;
-          addZuBtnClickHandler(btn);
-          makeDraggable(btn);
-          btn.dataset.page = currentPage;
-          page.appendChild(btn);
-          btn.classList.add('is-selected');
-          pasted.push(btn);
-          if (snap.linkedObj) {
-            const obj = document.createElement('div');
-            obj.dataset.id    = ++annIdCounter;
-            obj.dataset.type  = 'zu';
-            obj.dataset.zuId  = newZuId;
-            obj.className     = snap.linkedObj.className || 'zu-obj state-visible';
-            obj.style.cssText = [
-              `left:${snap.linkedObj.left + dx}px`,
-              `top:${snap.linkedObj.top + dy}px`,
-              `width:${snap.linkedObj.width}px`,
-              `height:${snap.linkedObj.height}px`,
-              `background:${snap.linkedObj.background}`,
-            ].join('; ') + ';';
-            addZuObjClickHandler(obj);
-            makeDraggable(obj);
-            makeResizable(obj);
-            obj.dataset.page = currentPage;
-            page.appendChild(obj);
-            pasted.push(obj);
-          }
-          return;
-        }
-
-        // zu-btn と一緒にコピーされた zu-obj はスキップ（zu-btn 側で作成済み）
-        if (snap.className?.includes('zu-obj') && snap.zuId && skipZuObjIds.has(snap.zuId)) return;
 
         // shomei-btn と一緒にコピーされた付箋はスキップ（shomei-btn 側で作成済み）
         if (snap.type === 'sticky' && snap.shomeiId && skipShomeiStickyIds.has(snap.shomeiId)) return;
@@ -4494,7 +4293,7 @@
     function deselectAllObjects() {
       selectedStickySet.forEach(n => n.classList.remove('is-selected'));
       selectedStickySet.clear();
-      document.querySelectorAll('.ann-object, .ann-icon-obj, .daimon-btn, .zu-btn, .zu-obj, .kotae-btn, .shomei-btn').forEach(a => a.classList.remove('is-selected'));
+      document.querySelectorAll('.ann-object, .ann-icon-obj, .daimon-btn, .kotae-btn, .shomei-btn').forEach(a => a.classList.remove('is-selected'));
       selectedAnnotation = null;
       closeDialog();
     }
@@ -5176,11 +4975,6 @@
         return;
       }
 
-      if (type === 'zu') {
-        // 図固有：フィールドなし（オブジェクトは描画で作成）
-        return;
-      }
-
       // --- 表示タイプ（非sticky共通） ---
       const dtDt = document.createElement('dt');
       dtDt.textContent = '表示タイプ';
@@ -5254,12 +5048,6 @@
         form.appendChild(_buildTextDD('annFile', savedData.annFile || '', ''));
 
       } else if (type === 'externallink') {
-        const showMode = savedData.annShowMode || '0';
-        form.appendChild(_buildRadioDt('表示方法'));
-        form.appendChild(_buildRadioDD('annShowMode', 'annShowModeRadio', showMode, [
-          { value: '0', label: 'ページ内' },
-          { value: '1', label: '別タブ' },
-        ]));
         form.appendChild(_buildTextDt('リンク先URL'));
         form.appendChild(_buildTextDD('annUrl', savedData.annUrl || '', 'https://...'));
 
@@ -5516,43 +5304,6 @@
           updateStatus('付箋を配置しました（クリックで解答の表示/非表示）');
         }
 
-      } else if (type === 'zu') {
-        // --- 図オブジェクト＋図ボタンを同時作成 ---
-        if (!isUpdate) {
-          const { x, y, w, h } = pendingRect;
-          const zid = `zu-${++zuCounter}`;
-
-          // 図オブジェクトを作成
-          const obj = document.createElement('div');
-          obj.className     = 'zu-obj state-visible';
-          obj.dataset.id    = ++annIdCounter;
-          obj.dataset.type  = 'zu';
-          obj.dataset.zuId  = zid;
-          obj.style.cssText = `left:${x}px; top:${y}px; width:${w}px; height:${h}px;`;
-          addZuObjClickHandler(obj);
-          makeDraggable(obj);
-          makeResizable(obj);
-          obj.dataset.page = currentPage;
-          document.getElementById('pageLeft').appendChild(obj);
-
-          // 図ボタンを作成（図オブジェクトの少し上に配置）
-          const btn = document.createElement('div');
-          btn.className     = 'zu-btn';
-          btn.dataset.type  = 'zu';
-          btn.dataset.id    = ++annIdCounter;
-          btn.dataset.zuId  = zid;
-          btn.textContent   = '図';
-          btn.style.left    = x + 'px';
-          btn.style.top     = Math.max(0, y - 36) + 'px';
-          addZuBtnClickHandler(btn);
-          makeDraggable(btn);
-          btn.dataset.page = currentPage;
-          document.getElementById('pageLeft').appendChild(btn);
-
-          pushUndo({ type: 'zu-create', obj, btn });
-          updateStatus('図オブジェクトと図ボタンを作成しました');
-        }
-
       } else {
         // --- 汎用アノテーション（ページリンク / Plusファイル / 外部リンク / 音声再生 / 動画再生） ---
         const cfg         = ANNOTATION_TYPE_CONFIG[type];
@@ -5688,12 +5439,12 @@
             updateStatus(`付箋を ${selectedStickySet.size} 件選択中`);
           } else {
             const multiCount = selectedStickySet.size
-              + document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').length;
+              + document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').length;
             if (multiCount > 1 && selectedStickySet.has(note)) {
               // 複数選択中に選択済み付箋をクリック：他の選択を解除してこの付箋のみ選択
               selectedStickySet.forEach(n => n.classList.remove('is-selected'));
               selectedStickySet.clear();
-              document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(a => a.classList.remove('is-selected'));
+              document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(a => a.classList.remove('is-selected'));
               selectedStickySet.add(note);
               note.classList.add('is-selected');
               openAnnotationSettingsDialog('sticky', note);
@@ -5702,7 +5453,7 @@
               // 未選択オブジェクトクリック：全解除してこの付箋のみ選択
               selectedStickySet.forEach(n => n.classList.remove('is-selected'));
               selectedStickySet.clear();
-              document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(a => a.classList.remove('is-selected'));
+              document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(a => a.classList.remove('is-selected'));
               selectedStickySet.add(note);
               note.classList.add('is-selected');
               openAnnotationSettingsDialog('sticky', note);
@@ -5789,12 +5540,12 @@
           updateStatus(`${count} 件のオブジェクトを選択中`);
         } else {
           const multiCount = selectedStickySet.size
-            + document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').length;
+            + document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').length;
           if (multiCount > 1 && ann.classList.contains('is-selected')) {
             // 複数選択中に選択済みオブジェクトをクリック：他の選択を解除してこの要素のみ選択
             selectedStickySet.forEach(n => n.classList.remove('is-selected'));
             selectedStickySet.clear();
-            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(a => a.classList.remove('is-selected'));
+            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(a => a.classList.remove('is-selected'));
             ann.classList.add('is-selected');
             openAnnotationSettingsDialog(type, ann);
             updateStatus(`${cfg?.label ?? type}を選択中`);
@@ -5802,7 +5553,7 @@
             // 未選択オブジェクトクリック：全解除してこの要素のみ選択
             selectedStickySet.forEach(n => n.classList.remove('is-selected'));
             selectedStickySet.clear();
-            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(a => a.classList.remove('is-selected'));
+            document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(a => a.classList.remove('is-selected'));
             ann.classList.add('is-selected');
             openAnnotationSettingsDialog(type, ann);
             updateStatus(`${cfg?.label ?? type}を選択中`);
@@ -5956,11 +5707,6 @@
       } else if (el.classList.contains('daimon-btn')) {
         addDaimonClickHandler(el);
         makeDraggable(el);
-      } else if (el.classList.contains('zu-btn')) {
-        addZuBtnClickHandler(el);
-      } else if (el.classList.contains('zu-obj')) {
-        addZuObjClickHandler(el);
-        makeResizable(el);
       } else if (el.classList.contains('kotae-btn')) {
         addKotaeClickHandler(el);
       } else if (el.classList.contains('shomei-btn')) {
@@ -5990,15 +5736,10 @@
         const isInMultiSel     = selectedAll.length > 1 && selectedAll.includes(el);
 
         if (e.altKey && isInMultiSel) {
-          // zu-btn / shomei-btn を含む場合は事前に新 ID を採番してリマップ表を作成
-          const zuIdMap     = new Map();
+          // shomei-btn を含む場合は事前に新 ID を採番してリマップ表を作成
           const shomeiIdMap = new Map();
           const kotaeIdMap  = new Map();
           selectedAll.forEach(orig => {
-            if (orig.classList.contains('zu-btn') && orig.dataset.zuId) {
-              const oldId = orig.dataset.zuId;
-              if (!zuIdMap.has(oldId)) zuIdMap.set(oldId, `zu-${++zuCounter}`);
-            }
             if (orig.classList.contains('shomei-btn') && orig.dataset.shomeiId) {
               const oldId = orig.dataset.shomeiId;
               if (!shomeiIdMap.has(oldId)) shomeiIdMap.set(oldId, `shomei-${++shomeiCounter}`);
@@ -6013,11 +5754,6 @@
             const clone = orig.cloneNode(true);
             clone.dataset.id = ++annIdCounter;
             clone.classList.remove('is-selected');
-            // zu-btn / zu-obj の zuId を新 ID にリマップ
-            if ((clone.classList.contains('zu-btn') || clone.classList.contains('zu-obj')) && clone.dataset.zuId) {
-              const mapped = zuIdMap.get(clone.dataset.zuId);
-              if (mapped) clone.dataset.zuId = mapped;
-            }
             // shomei-btn / 付箋 の shomeiId を新 ID にリマップ
             if (clone.classList.contains('shomei-btn') && clone.dataset.shomeiId) {
               const mapped = shomeiIdMap.get(clone.dataset.shomeiId);
@@ -6044,27 +5780,6 @@
               startLeft: parseInt(orig.style.left, 10) || 0,
               startTop:  parseInt(orig.style.top,  10) || 0
             };
-          });
-          // zu-btn に対応する zu-obj が選択されていない場合は zu-obj も補完複製
-          const clonedObjNewIds = new Set(
-            clones.filter(c => c.clone.classList.contains('zu-obj')).map(c => c.clone.dataset.zuId)
-          );
-          zuIdMap.forEach((newId, oldId) => {
-            if (clonedObjNewIds.has(newId)) return;
-            const origObj = document.querySelector(`.zu-obj[data-zu-id="${oldId}"]`);
-            if (!origObj) return;
-            const objClone = origObj.cloneNode(true);
-            objClone.dataset.id   = ++annIdCounter;
-            objClone.dataset.zuId = newId;
-            objClone.classList.remove('is-selected');
-            origObj.parentNode.appendChild(objClone);
-            makeDraggable(objClone, excludeSelector);
-            reinitElement(objClone);
-            clones.push({
-              clone:     objClone,
-              startLeft: parseInt(origObj.style.left, 10) || 0,
-              startTop:  parseInt(origObj.style.top,  10) || 0
-            });
           });
           // shomei-btn に対応する付箋が選択されていない場合は付箋も補完複製
           const clonedStickyShomeiIds = new Set(
@@ -6240,30 +5955,13 @@
 
         let target = el;
         let altCopied = false; // Alt コピーフラグ
-        let altExtraClones = []; // zu-obj など追加複製された要素（Undo 用）
+        let altExtraClones = []; // 追加複製された要素（Undo 用）
 
         // Alt+ドラッグ（単体）：クローンを作成してドラッグ（オリジナルは元の位置に残る）
         if (e.altKey) {
           const clone = el.cloneNode(true);
           clone.dataset.id = ++annIdCounter;
           clone.classList.remove('is-selected');
-          // zu-btn の場合：新 zuId を採番し、対応する zu-obj も複製
-          if (clone.classList.contains('zu-btn') && clone.dataset.zuId) {
-            const oldZuId = clone.dataset.zuId;
-            const newZuId = `zu-${++zuCounter}`;
-            clone.dataset.zuId = newZuId;
-            const origObj = document.querySelector(`.zu-obj[data-zu-id="${oldZuId}"]`);
-            if (origObj) {
-              const objClone = origObj.cloneNode(true);
-              objClone.dataset.id   = ++annIdCounter;
-              objClone.dataset.zuId = newZuId;
-              objClone.classList.remove('is-selected');
-              origObj.parentNode.appendChild(objClone);
-              makeDraggable(objClone, excludeSelector);
-              reinitElement(objClone);
-              altExtraClones.push(objClone);
-            }
-          }
           // shomei-btn の場合：新 shomeiId を採番し、紐付き付箋も複製
           if (clone.classList.contains('shomei-btn') && clone.dataset.shomeiId) {
             const oldShomeiId = clone.dataset.shomeiId;
@@ -6433,7 +6131,7 @@
         });
 
         // 各種ボタンのスナップショット
-        document.querySelectorAll('.daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(btn => {
+        document.querySelectorAll('.daimon-btn.is-selected.is-selected.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(btn => {
           deleteSnapshots.push({
             className:   btn.className.replace(/\bis-selected\b/g, '').trim(),
             id:          btn.dataset.id,
@@ -6856,6 +6554,14 @@
      */
     function updatePageDisplay() {
 
+      // PDF未読み込み時は 0/0 を表示
+      if (!pdfDoc) {
+        document.getElementById('pageInput').value = 0;
+        const totalPagesText = document.getElementById('totalPagesText');
+        if (totalPagesText) totalPagesText.textContent = '/ 0';
+        return;
+      }
+
       document.getElementById('pageInput').value = currentPage;
       // 合計ページ数表示を更新
       const totalPagesText = document.getElementById('totalPagesText');
@@ -6899,7 +6605,7 @@
     function updateAnnotationVisibility() {
       document.querySelectorAll(
         '#pageLeft .sticky-note, #pageLeft .ann-object, #pageLeft .ann-icon-obj, ' +
-        '#pageLeft .daimon-btn, #pageLeft .zu-btn, #pageLeft .zu-obj, ' +
+        '#pageLeft .daimon-btn, ' +
         '#pageLeft .kotae-btn, #pageLeft .shomei-btn'
       ).forEach(el => {
         const elPage = parseInt(el.dataset.page || '1', 10);
@@ -6909,15 +6615,19 @@
 
     /**
      * PDFを読み込んで最初のページを表示する。
-     * @param {string} path - PDFファイルのパス
+     * @param {string|ArrayBuffer} source - PDFファイルのURLまたはArrayBuffer
      */
-    async function loadPDF(path) {
+    async function loadPDF(source) {
       try {
         // cMapUrl：日本語など CID フォントの文字マッピングに必須
         // standardFontDataUrl：埋め込みフォントがない場合の代替フォントデータ
         const BASE = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/';
+        // URLとArrayBufferの両方に対応
+        const loadOption = typeof source === 'string'
+          ? { url: source }
+          : { data: source };
         pdfDoc = await pdfjsLib.getDocument({
-          url:                 path,
+          ...loadOption,
           cMapUrl:             BASE + 'cmaps/',
           cMapPacked:          true,
           standardFontDataUrl: BASE + 'standard_fonts/',
@@ -6932,6 +6642,8 @@
         PAGE_ASPECT = vp.width / vp.height;
         resizePage();
         updatePageDisplay();
+        // PDF読み込み成功後にドロップオーバーレイを非表示にする
+        document.getElementById('pdfDropOverlay').classList.add('hidden');
       } catch (err) {
         console.error('PDF読み込みエラー:', err);
       }
@@ -7349,7 +7061,7 @@
     function getSelectedObjects() {
       const result = [];
       selectedStickySet.forEach(n => result.push(n));
-      document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(a => result.push(a));
+      document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(a => result.push(a));
       return result;
     }
 
@@ -7370,13 +7082,13 @@
       if (!addToSel) {
         selectedStickySet.forEach(n => n.classList.remove('is-selected'));
         selectedStickySet.clear();
-        document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .zu-btn.is-selected, .zu-obj.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(a => a.classList.remove('is-selected'));
+        document.querySelectorAll('.ann-object.is-selected, .ann-icon-obj.is-selected, .daimon-btn.is-selected, .kotae-btn.is-selected, .shomei-btn.is-selected').forEach(a => a.classList.remove('is-selected'));
       }
 
       // 現在ページのオブジェクトのみをチェックして矩形との交差判定
       // （他ページ非表示の .ann-hidden-page 要素は除外）
       const page = document.getElementById('pageLeft');
-      page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn, .zu-btn, .zu-obj, .kotae-btn, .shomei-btn').forEach(obj => {
+      page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn, .kotae-btn, .shomei-btn').forEach(obj => {
         if (obj.classList.contains('ann-hidden-page')) return;
         const l = parseFloat(obj.style.left) || 0;
         const t = parseFloat(obj.style.top)  || 0;
@@ -7590,9 +7302,38 @@
       }
     });
 
-    // PDFを読み込む
-    loadPDF(PDF_PATH);
+    // ドラッグ&ドロップでPDFを読み込む
+    (function() {
+      const dropZone = document.getElementById('pageLeft');
 
+      // ドラッグ中はオーバーレイを強調表示
+      dropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        document.getElementById('pdfDropOverlay').classList.add('drag-over');
+      });
+
+      // ドラッグが外れたら強調解除
+      dropZone.addEventListener('dragleave', function(e) {
+        document.getElementById('pdfDropOverlay').classList.remove('drag-over');
+      });
+
+      // ドロップ時にPDFを読み込む
+      dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        document.getElementById('pdfDropOverlay').classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (!file || file.type !== 'application/pdf') {
+          console.warn('PDFファイルをドロップしてください');
+          return;
+        }
+        file.arrayBuffer().then(function(buffer) {
+          loadPDF(buffer);
+        });
+      });
+    })();
+
+    // 初期ページ表示を 0/0 に初期化する
+    updatePageDisplay();
 
 
   </script>
