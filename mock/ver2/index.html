@@ -562,6 +562,37 @@
       display: block;
     }
 
+    /* PDF ドロップオーバーレイ */
+    #pdfDropOverlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.92);
+      border: 3px dashed #aaa;
+      color: #666;
+      font-size: 18px;
+      gap: 12px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    #pdfDropOverlay.hidden {
+      display: none;
+    }
+
+    #pdfDropOverlay.drag-over {
+      background: rgba(66, 133, 244, 0.15);
+      border-color: #4285f4;
+      color: #4285f4;
+    }
+
+    #pdfDropOverlay .drop-icon {
+      font-size: 48px;
+    }
+
     /* 現在ページ以外のアノテーションは非表示 */
     .ann-hidden-page { display: none !important; }
 
@@ -1977,6 +2008,60 @@
     }
 
     /* ============================
+       ファイルドロップゾーン
+    ============================ */
+    .file-drop-zone {
+      margin-top: 6px;
+      padding: 10px 8px;
+      border: 2px dashed #aaa;
+      border-radius: 6px;
+      background: #f8f8f8;
+      text-align: center;
+      font-size: 11px;
+      color: #888;
+      cursor: default;
+      transition: border-color 0.15s, background 0.15s;
+      user-select: none;
+      line-height: 1.6;
+    }
+    .file-drop-zone.is-dragover {
+      border-color: #6898d8;
+      background: #eef4ff;
+      color: #5580bb;
+    }
+    .file-drop-zone .drop-status {
+      margin-top: 2px;
+      font-size: 10px;
+      font-weight: 700;
+      min-height: 14px;
+    }
+    .file-drop-zone .drop-status.is-success { color: #3a9e56; }
+    .file-drop-zone .drop-status.is-error   { color: #d94040; }
+
+    /* サイドバー内（ダークテーマ）での上書き */
+    .side-detail-form .file-drop-zone {
+      border-color: #4a5468;
+      background: #1e2530;
+      color: #7a8aaa;
+    }
+    .side-detail-form .file-drop-zone.is-dragover {
+      border-color: #6898d8;
+      background: #1e2f4a;
+      color: #88aadd;
+    }
+    /* quick-popup（ライトテーマ）での上書き */
+    .quick-popup .file-drop-zone {
+      border-color: #bbb;
+      background: #f5f5f5;
+      color: #888;
+    }
+    .quick-popup .file-drop-zone.is-dragover {
+      border-color: #6898d8;
+      background: #eef4ff;
+      color: #5580bb;
+    }
+
+    /* ============================
        スクロールバー
     ============================ */
     ::-webkit-scrollbar {
@@ -2440,6 +2525,10 @@
              onmousedown="onPageMouseDown(event)"
              onmousemove="onPageMouseMove(event)"
              onmouseup="onPageMouseUp(event)">
+          <div id="pdfDropOverlay">
+            <span class="drop-icon">📄</span>
+            <span>PDFをここにドロップ</span>
+          </div>
           <canvas id="pdfCanvas" class="page-content"></canvas>
         </div>
 
@@ -2624,8 +2713,6 @@
     let _currentRenderTask = null;
     /** 描画世代カウンター：非同期待機中に新しい renderPage が呼ばれたを検知する */
     let _renderVersion = 0;
-    /** PDFファイルのパス */
-    const PDF_PATH  = './book.pdf';
     let zoomLevel = 100;
     let selectedAnnotation = null;
     /** グレーアウトパネルで最後に表示した種別 */
@@ -2656,7 +2743,7 @@
         fields: [
           { id: 'annDisplayType' }, { id: 'annPosX' }, { id: 'annPosY' },
           { id: 'annWidth' }, { id: 'annHeight' }, { id: 'annColor' },
-          { id: 'annShowMode' }, { id: 'annUrl' },
+          { id: 'annUrl' },
         ]
       },
       audio: {
@@ -5156,12 +5243,6 @@
         form.appendChild(_buildTextDD('annFile', savedData.annFile || '', ''));
 
       } else if (type === 'externallink') {
-        const showMode = savedData.annShowMode || '0';
-        form.appendChild(_buildRadioDt('表示方法'));
-        form.appendChild(_buildRadioDD('annShowMode', 'annShowModeRadio', showMode, [
-          { value: '0', label: 'ページ内' },
-          { value: '1', label: '別タブ' },
-        ]));
         form.appendChild(_buildTextDt('リンク先URL'));
         form.appendChild(_buildTextDD('annUrl', savedData.annUrl || '', 'https://...'));
 
@@ -5170,6 +5251,7 @@
         const fileDd = _buildTextDD('annFile', savedData.annFile || '', 'ファイル名を入力');
         fileDd.querySelector('input').insertAdjacentHTML('afterend',
           '<p class="field-note">※ファイル名の拡張子「.mp3」は除く</p>');
+        _appendDropZone(fileDd, 'annFile', 'audio');
         form.appendChild(fileDd);
         const playMode = savedData.annPlayMode || '0';
         form.appendChild(_buildRadioDt('再生方法'));
@@ -5189,6 +5271,7 @@
         const fileDd = _buildTextDD('annFile', savedData.annFile || '', 'ファイル名を入力');
         fileDd.querySelector('input').insertAdjacentHTML('afterend',
           '<p class="field-note">※ファイル名の拡張子「.mp4」は除く</p>');
+        _appendDropZone(fileDd, 'annFile', 'video');
         form.appendChild(fileDd);
         const showMode = savedData.annShowMode || '0';
         form.appendChild(_buildRadioDt('表示方法'));
@@ -5275,6 +5358,71 @@
       inp.placeholder = placeholder;
       dd.appendChild(inp);
       return dd;
+    }
+
+    /**
+     * ファイルドロップゾーンを dd 要素に追加するヘルパー。
+     * ドロップされたファイルをサーバーにアップロードし、inputId のフィールドに
+     * 拡張子なしのファイル名をセットする。
+     * @param {HTMLElement} ddEl      - 追加先の dd 要素
+     * @param {string}      inputId   - ファイル名を反映する input の id
+     * @param {string}      mediaType - 'audio' または 'video'
+     */
+    function _appendDropZone(ddEl, inputId, mediaType) {
+      const extHint = mediaType === 'audio' ? 'MP3' : 'MP4';
+      const zone = document.createElement('div');
+      zone.className = 'file-drop-zone';
+      zone.innerHTML = `
+        <p>ここに ${extHint} ファイルをドロップ</p>
+        <p class="drop-status"></p>
+      `;
+      const statusEl = zone.querySelector('.drop-status');
+
+      // ドラッグオーバー：ハイライト表示
+      zone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        zone.classList.add('is-dragover');
+      });
+
+      // ドラッグ離脱：ハイライト解除
+      zone.addEventListener('dragleave', (e) => {
+        e.stopPropagation();
+        zone.classList.remove('is-dragover');
+      });
+
+      // ドロップ：ファイルをアップロードしてファイル名をセット
+      zone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        zone.classList.remove('is-dragover');
+
+        const file = e.dataTransfer.files[0];
+        if (!file) return;
+
+        // 拡張子なしのファイル名を入力欄に即時反映
+        const baseName = file.name.replace(/\.[^/.]+$/, '');
+        const fileInput = ddEl.querySelector(`#${inputId}`);
+        if (fileInput) fileInput.value = baseName;
+
+        // サーバーへアップロード
+        statusEl.textContent = 'アップロード中...';
+        statusEl.className = 'drop-status';
+        try {
+          const res = await fetch(`/upload?filename=${encodeURIComponent(file.name)}`, {
+            method: 'POST',
+            body: file,
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          statusEl.textContent = `✔ ${file.name} をアップロードしました`;
+          statusEl.className = 'drop-status is-success';
+        } catch (err) {
+          statusEl.textContent = `✖ アップロード失敗: ${err.message}`;
+          statusEl.className = 'drop-status is-error';
+        }
+      });
+
+      ddEl.appendChild(zone);
     }
 
     /**
@@ -6795,6 +6943,14 @@
      */
     function updatePageDisplay() {
 
+      // PDF未読み込み時は 0/0 を表示
+      if (!pdfDoc) {
+        document.getElementById('pageInput').value = 0;
+        const totalPagesText = document.getElementById('totalPagesText');
+        if (totalPagesText) totalPagesText.textContent = '/ 0';
+        return;
+      }
+
       document.getElementById('pageInput').value = currentPage;
       // 合計ページ数表示を更新
       const totalPagesText = document.getElementById('totalPagesText');
@@ -6870,15 +7026,19 @@
 
     /**
      * PDFを読み込んで最初のページを表示する。
-     * @param {string} path - PDFファイルのパス
+     * @param {string|ArrayBuffer} source - PDFファイルのURLまたはArrayBuffer
      */
-    async function loadPDF(path) {
+    async function loadPDF(source) {
       try {
         // cMapUrl：日本語など CID フォントの文字マッピングに必須
         // standardFontDataUrl：埋め込みフォントがない場合の代替フォントデータ
         const BASE = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/';
+        // URLとArrayBufferの両方に対応
+        const loadOption = typeof source === 'string'
+          ? { url: source }
+          : { data: source };
         pdfDoc = await pdfjsLib.getDocument({
-          url:                 path,
+          ...loadOption,
           cMapUrl:             BASE + 'cmaps/',
           cMapPacked:          true,
           standardFontDataUrl: BASE + 'standard_fonts/',
@@ -6893,6 +7053,8 @@
         PAGE_ASPECT = vp.width / vp.height;
         resizePage();
         updatePageDisplay();
+        // PDF読み込み成功後にドロップオーバーレイを非表示にする
+        document.getElementById('pdfDropOverlay').classList.add('hidden');
       } catch (err) {
         console.error('PDF読み込みエラー:', err);
       }
@@ -7568,8 +7730,38 @@
       }
     });
 
-    // PDFを読み込む
-    loadPDF(PDF_PATH);
+    // ドラッグ&ドロップでPDFを読み込む
+    (function() {
+      const dropZone = document.getElementById('pageLeft');
+
+      // ドラッグ中はオーバーレイを強調表示
+      dropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        document.getElementById('pdfDropOverlay').classList.add('drag-over');
+      });
+
+      // ドラッグが外れたら強調解除
+      dropZone.addEventListener('dragleave', function(e) {
+        document.getElementById('pdfDropOverlay').classList.remove('drag-over');
+      });
+
+      // ドロップ時にPDFを読み込む
+      dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        document.getElementById('pdfDropOverlay').classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (!file || file.type !== 'application/pdf') {
+          console.warn('PDFファイルをドロップしてください');
+          return;
+        }
+        file.arrayBuffer().then(function(buffer) {
+          loadPDF(buffer);
+        });
+      });
+    })();
+
+    // 初期ページ表示を 0/0 に初期化する
+    updatePageDisplay();
 
     // ============================
     // ツールチップ（position:fixed でoverflow制限を回避）

@@ -7,6 +7,8 @@ import http.server
 import socketserver
 import socket
 import os
+import json
+from urllib.parse import urlparse, parse_qs
 
 # ===========================
 # 設定定数
@@ -41,6 +43,67 @@ class CORSRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
         super().end_headers()
+
+    def do_OPTIONS(self):
+        """プリフライトリクエストに対応するためのOPTIONSハンドラー。"""
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Content-Length")
+        self.end_headers()
+
+    def do_POST(self):
+        """
+        ファイルアップロードを処理する POSTハンドラー。
+        /upload?filename=xxx にファイルの生バイナリを送信すると
+        mock/ver2/_media/ に保存し、JSON を返す。
+        """
+        parsed = urlparse(self.path)
+        if not parsed.path.rstrip("/") == "/upload":
+            self.send_response(404)
+            self.end_headers()
+            return
+
+        # クエリパラメータからファイル名を取得
+        params = parse_qs(parsed.query)
+        filename_list = params.get("filename", [])
+        if not filename_list or not filename_list[0].strip():
+            self._send_json(400, {"error": "filename パラメータが必要です"})
+            return
+
+        # ディレクトリトラバーサル防止のためベース名のみ使用
+        filename = os.path.basename(filename_list[0].strip())
+        if not filename:
+            self._send_json(400, {"error": "無効なファイル名です"})
+            return
+
+        # 保存先ディレクトリを作成
+        save_dir = os.path.join(SERVE_DIR, "mock", "ver2", "_media")
+        os.makedirs(save_dir, exist_ok=True)
+        save_path = os.path.join(save_dir, filename)
+
+        # リクエストボディを読み込んで保存
+        content_length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_length)
+        with open(save_path, "wb") as f:
+            f.write(body)
+
+        self.log_message("ファイルアップロード: %s (%d bytes)", filename, len(body))
+        self._send_json(200, {"filename": filename, "saved": True})
+
+    def _send_json(self, status_code: int, data: dict):
+        """
+        JSON レスポンスを送信するユーティリティメソッド。
+
+        Args:
+            status_code: HTTPステータスコード
+            data: レスポンスとして返す辞書
+        """
+        body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+        self.send_response(status_code)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def log_message(self, format, *args):
         """アクセスログをコンソールに出力する。"""
