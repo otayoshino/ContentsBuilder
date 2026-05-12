@@ -5910,8 +5910,8 @@
         zone.classList.remove('is-dragover');
       });
 
-      // ドロップ：ファイルをアップロードしてファイル名をセット
-      zone.addEventListener('drop', async (e) => {
+      // ドロップ：ファイルをBlobURLに変換してmediaBlobsへ格納し、ファイル名をセット
+      zone.addEventListener('drop', (e) => {
         e.preventDefault();
         e.stopPropagation();
         zone.classList.remove('is-dragover');
@@ -5924,21 +5924,14 @@
         const fileInput = ddEl.querySelector(`#${inputId}`);
         if (fileInput) fileInput.value = baseName;
 
-        // サーバーへアップロード
-        statusEl.textContent = 'アップロード中...';
-        statusEl.className = 'drop-status';
-        try {
-          const res = await fetch(`/upload?filename=${encodeURIComponent(file.name)}`, {
-            method: 'POST',
-            body: file,
-          });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          statusEl.textContent = `✔ ${file.name} をアップロードしました`;
-          statusEl.className = 'drop-status is-success';
-        } catch (err) {
-          statusEl.textContent = `✖ アップロード失敗: ${err.message}`;
-          statusEl.className = 'drop-status is-error';
+        // ファイルをBlobURLに変換してmediaBlobsへキャッシュ（サーバー不要）
+        // 同名ファイルが既にある場合は古いBlobURLを解放してから上書き
+        if (mediaBlobs[file.name]) {
+          URL.revokeObjectURL(mediaBlobs[file.name]);
         }
+        mediaBlobs[file.name] = URL.createObjectURL(file);
+        statusEl.textContent = `✔ ${file.name} を読み込みました`;
+        statusEl.className = 'drop-status is-success';
       });
 
       ddEl.appendChild(zone);
