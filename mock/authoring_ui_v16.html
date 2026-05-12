@@ -7,6 +7,8 @@
   <!-- PDF.js CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+  <!-- JSZip CDN（ZIP保存・読み込み用） -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
     /* ===========================
        リセット・基本スタイル
@@ -54,13 +56,14 @@
       user-select: none;
       position: relative;
       z-index: 10;
-      overflow: hidden;
+      overflow: visible;
       transition: height 0.2s ease;
     }
 
     /* ナビ折りたたみ時 */
     .nav.is-hidden {
       height: 0;
+      overflow: hidden;
     }
 
     /* ナビ非表示時に右上に浮かぶ展開ボタン */
@@ -165,6 +168,47 @@
       opacity: 0.3;
       cursor: default;
       pointer-events: none;
+    }
+
+    /* 保存ドロップダウン */
+    .save-dropdown-wrap {
+      position: relative;
+    }
+    #saveDropdownMenu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      background: #fff;
+      color: #333;
+      border-radius: 6px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+      min-width: 200px;
+      z-index: 300;
+      overflow: hidden;
+    }
+    #saveDropdownMenu.is-open {
+      display: block;
+    }
+    #saveDropdownMenu button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #333;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.12s;
+    }
+    #saveDropdownMenu button:hover {
+      background: #f0f3fb;
+    }
+    #saveDropdownMenu button + button {
+      border-top: 1px solid #eee;
     }
 
     /* ページ番号入力 */
@@ -798,6 +842,8 @@
       color: #eee;
       font-size: 15px;
       font-weight: 700;
+      cursor: move;
+      user-select: none;
     }
 
     .dialog-title span {
@@ -1333,8 +1379,6 @@
     /* アイコン型アノテーションオブジェクト（ページ上配置） */
     .ann-icon-obj {
       position: absolute;
-      width: 48px;
-      height: 48px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1351,8 +1395,8 @@
       z-index: 20;
     }
     .ann-icon-obj svg {
-      width: 24px;
-      height: 24px;
+      width: 60%;
+      height: 60%;
       fill: #fff;
       pointer-events: none;
     }
@@ -1568,6 +1612,57 @@
     }
     .quick-popup input[type="number"] {
       -moz-appearance: textfield;
+    }
+
+    /* ファイルドロップゾーン */
+    .file-drop-zone {
+      margin-top: 6px;
+      padding: 10px 8px;
+      border: 2px dashed #aaa;
+      border-radius: 6px;
+      background: #f8f8f8;
+      text-align: center;
+      font-size: 11px;
+      color: #888;
+      cursor: default;
+      transition: border-color 0.15s, background 0.15s;
+      user-select: none;
+      line-height: 1.6;
+    }
+    .file-drop-zone.is-dragover {
+      border-color: #6898d8;
+      background: #eef4ff;
+      color: #5580bb;
+    }
+    .file-drop-zone .drop-status {
+      margin-top: 2px;
+      font-size: 10px;
+      font-weight: 700;
+      min-height: 14px;
+    }
+    .file-drop-zone .drop-status.is-success { color: #3a9e56; }
+    .file-drop-zone .drop-status.is-error   { color: #d94040; }
+    /* サイドバー内（ダークテーマ）での上書き */
+    .side-detail-form .file-drop-zone {
+      border-color: #4a5468;
+      background: #1e2530;
+      color: #7a8aaa;
+    }
+    .side-detail-form .file-drop-zone.is-dragover {
+      border-color: #6898d8;
+      background: #1e2f4a;
+      color: #88aadd;
+    }
+    /* quick-popup（ライトテーマ）での上書き */
+    .quick-popup .file-drop-zone {
+      border-color: #bbb;
+      background: #f5f5f5;
+      color: #888;
+    }
+    .quick-popup .file-drop-zone.is-dragover {
+      border-color: #6898d8;
+      background: #eef4ff;
+      color: #5580bb;
     }
 
     /* クイック作成ポップアップ：ライトテーマ上書き */
@@ -1988,6 +2083,130 @@
       background: #555;
       border-radius: 3px;
     }
+
+    /* ============================
+       音声プレーヤーポップアップ
+    ============================ */
+    #audioPlayerPopup {
+      position: fixed;
+      z-index: 9100;
+      background: #333;
+      border-radius: 8px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.55);
+      padding: 0;
+      overflow: hidden;
+      min-width: 320px;
+    }
+    #audioPlayerPopup .audio-player-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 40px;
+      padding: 0 14px;
+      background: #444;
+      color: #eee;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: move;
+      user-select: none;
+    }
+    #audioPlayerPopup .audio-player-title span {
+      cursor: pointer;
+      color: #aaa;
+      font-size: 18px;
+      line-height: 1;
+    }
+    #audioPlayerPopup .audio-player-title span:hover { color: #fff; }
+    #audioPlayerPopup .audio-player-body {
+      padding: 12px 16px;
+    }
+    #audioPlayerPopup audio {
+      width: 100%;
+      display: block;
+    }
+
+    /* 動画モーダルオーバーレイ */
+    #videoPlayerModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9200;
+      background: rgba(0,0,0,0.82);
+      align-items: center;
+      justify-content: center;
+    }
+    #videoPlayerModal.is-open { display: flex; }
+    #videoPlayerModal .video-modal-box {
+      background: #222;
+      border-radius: 10px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+      overflow: hidden;
+      max-width: 90vw;
+      width: 640px;
+    }
+    #videoPlayerModal .video-modal-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 44px;
+      padding: 0 16px;
+      background: #333;
+      color: #eee;
+      font-size: 13px;
+      font-weight: 700;
+      user-select: none;
+    }
+    #videoPlayerModal .video-modal-close {
+      cursor: pointer;
+      color: #aaa;
+      font-size: 22px;
+      line-height: 1;
+      padding: 0 4px;
+    }
+    #videoPlayerModal .video-modal-close:hover { color: #fff; }
+    #videoPlayerModal .video-modal-body { padding: 12px; }
+    #videoPlayerModal video { width: 100%; display: block; border-radius: 4px; }
+
+    /* Plusファイルポップアップ */
+    #plusfilePopup {
+      position: fixed;
+      z-index: 9100;
+      background: #333;
+      border-radius: 8px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.55);
+      width: 760px;
+      height: 520px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #plusfilePopup .plusfile-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 40px;
+      padding: 0 14px;
+      background: #444;
+      color: #eee;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: move;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    #plusfilePopup .plusfile-title .plusfile-close {
+      cursor: pointer;
+      color: #aaa;
+      font-size: 18px;
+      line-height: 1;
+    }
+    #plusfilePopup .plusfile-title .plusfile-close:hover { color: #fff; }
+    #plusfilePopup iframe {
+      flex: 1;
+      border: none;
+      background: #fff;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
@@ -2085,17 +2304,39 @@
 
     <!-- アクションブロック -->
     <div class="blk action">
-      <button class="nav-btn" data-tip="アノテーション保存" onclick="saveAnnotations()">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M17 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16H7V5h10v14zm-5-3h2v2h-2v-2zm0-8h2v6h-2V8z"/>
-        </svg>
-      </button>
+      <!-- 保存ドロップダウン -->
+      <div class="save-dropdown-wrap">
+        <button class="nav-btn" data-tip="アノテーション保存" onclick="toggleSaveDropdown(event)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16H7V5h10v14zm-5-3h2v2h-2v-2zm0-8h2v6h-2V8z"/>
+          </svg>
+        </button>
+        <div id="saveDropdownMenu">
+          <button onclick="saveAnnotations(); document.getElementById('saveDropdownMenu').classList.remove('is-open');">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5V9h5.5L13 3.5zM6 20V4h5v7h7v9H6z"/>
+            </svg>
+            JSONのみ保存
+          </button>
+          <button onclick="saveAnnotationsAsZip(); document.getElementById('saveDropdownMenu').classList.remove('is-open');">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 6h-2.18C17.4 4.84 16.3 4 15 4H9C7.7 4 6.6 4.84 6.18 6H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-5 0h-2V4h2v2zm-4 0V4h2v2h-2zm9 13H4V8h16v11zm-8-2l5-5-1.41-1.41L12 14.17l-2.09-2.08L8.5 13.5l3.5 3.5z"/>
+            </svg>
+            ZIPで保存（音声・動画含む）
+          </button>
+        </div>
+      </div>
       <!-- 読込用ファイル選択input（非表示） -->
       <input type="file" id="annotationFileInput" accept="application/json" style="display:none" onchange="handleAnnotationFile(event)">
-      </button>
-      <button class="nav-btn" data-tip="アノテーション読込" onclick="loadAnnotations()">
+      <input type="file" id="zipFileInput" accept=".zip" style="display:none" onchange="handleZipFile(event)">
+      <button class="nav-btn" data-tip="アノテーション読込（JSON）" onclick="loadAnnotations()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7v2H5v14h14v-7h2v7a2 2 0 0 1-2 2zm-7-7V3.5L18.5 9H13z"/>
+        </svg>
+      </button>
+      <button class="nav-btn" data-tip="ZIPから読込（JSON＋音声・動画）" onclick="loadAnnotationsFromZip()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20 6h-2.18C17.4 4.84 16.3 4 15 4H9C7.7 4 6.6 4.84 6.18 6H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-8 11l-5-5 1.41-1.41L12 14.17l6.59-6.58L20 9l-8 8z"/>
         </svg>
       </button>
       <button class="nav-btn" data-tip="ナビを折りたたむ" onclick="toggleNav()">
@@ -2511,38 +2752,64 @@
         }
 
         /**
-         * ファイル選択時の処理。JSONを読み込んでアノテーションを復元。
+         * アノテーション配列からDOMを再構築する共通処理。
+         * handleAnnotationFile / handleZipFile の両方から呼び出される。
+         * @param {Array} arr - annotations.json のパース済み配列
          */
-        function handleAnnotationFile(event) {
-          const file = event.target.files[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            try {
-              const data = e.target.result;
-              const arr = JSON.parse(data);
-              const page = document.getElementById('pageLeft');
-              const pageRect = page.getBoundingClientRect();
-              // 既存アノテーションを全削除
-              page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn, .kotae-btn, .shomei-btn').forEach(el => el.remove());
-              arr.forEach(obj => {
+        function restoreAnnotationsFromArray(arr) {
+          const page = document.getElementById('pageLeft');
+          const pageRect = page.getBoundingClientRect();
+          // 既存アノテーションを全削除
+          page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn, .kotae-btn, .shomei-btn').forEach(el => el.remove());
+          arr.forEach(obj => {
                 const el = document.createElement('div');
-                el.className = obj.className;
+                // ann-hidden-page はページ表示管理で付け直すため、className から除去してセット
+                el.className = (obj.className || '').replace(/\bann-hidden-page\b/g, '').trim();
                 el.dataset.type = obj.type;
                 el.dataset.id = obj.id;
                 if (obj.page) el.dataset.page = obj.page;
-                // --- %→px変換 ---
+                // --- 座標・サイズの復元（複数フォーマットに対応） ---
+                // ボタン系クラスはCSSでサイズが定義されているため、位置（left/top）のみ復元する
+                const isBtnClass = el.classList.contains('daimon-btn') ||
+                                   el.classList.contains('kotae-btn')  ||
+                                   el.classList.contains('shomei-btn') ||
+                                   el.classList.contains('zu-btn');
+                // 優先順位: (1) % 形式  (2) xRatio/yRatio/wRatio/hRatio  (3) px 形式
                 if (obj.style) {
-                  // left/top/width/height の%値を抽出
-                  const leftMatch = obj.style.match(/left:([\d.]+)%/);
-                  const topMatch = obj.style.match(/top:([\d.]+)%/);
-                  const widthMatch = obj.style.match(/width:([\d.]+)%/);
-                  const heightMatch = obj.style.match(/height:([\d.]+)%/);
+                  const leftPctMatch   = obj.style.match(/left:\s*([\d.]+)%/);
+                  const topPctMatch    = obj.style.match(/top:\s*([\d.]+)%/);
+                  const widthPctMatch  = obj.style.match(/width:\s*([\d.]+)%/);
+                  const heightPctMatch = obj.style.match(/height:\s*([\d.]+)%/);
                   let styleStr = '';
-                  if (leftMatch) styleStr += `left:${(parseFloat(leftMatch[1]) * pageRect.width / 100)}px;`;
-                  if (topMatch) styleStr += `top:${(parseFloat(topMatch[1]) * pageRect.height / 100)}px;`;
-                  if (widthMatch) styleStr += `width:${(parseFloat(widthMatch[1]) * pageRect.width / 100)}px;`;
-                  if (heightMatch) styleStr += `height:${(parseFloat(heightMatch[1]) * pageRect.height / 100)}px;`;
+                  if (leftPctMatch) {
+                    // (1) % 形式（saveAnnotations が出力する現行フォーマット）
+                    styleStr += `left:${parseFloat(leftPctMatch[1]) * pageRect.width / 100}px;`;
+                    if (topPctMatch) styleStr += `top:${parseFloat(topPctMatch[1]) * pageRect.height / 100}px;`;
+                    if (!isBtnClass) {
+                      if (widthPctMatch)  styleStr += `width:${parseFloat(widthPctMatch[1]) * pageRect.width / 100}px;`;
+                      if (heightPctMatch) styleStr += `height:${parseFloat(heightPctMatch[1]) * pageRect.height / 100}px;`;
+                    }
+                  } else if (obj.xRatio !== undefined) {
+                    // (2) xRatio/yRatio/wRatio/hRatio 形式（旧バージョンの JSON）
+                    styleStr += `left:${obj.xRatio * pageRect.width}px;`;
+                    styleStr += `top:${obj.yRatio * pageRect.height}px;`;
+                    if (!isBtnClass) {
+                      if (obj.wRatio !== undefined) styleStr += `width:${obj.wRatio * pageRect.width}px;`;
+                      if (obj.hRatio !== undefined) styleStr += `height:${obj.hRatio * pageRect.height}px;`;
+                    }
+                  } else {
+                    // (3) px 形式（style に直接 px 値が入っているフォーマット）
+                    const leftPxMatch   = obj.style.match(/left:\s*([\d.]+)px/);
+                    const topPxMatch    = obj.style.match(/top:\s*([\d.]+)px/);
+                    const widthPxMatch  = obj.style.match(/width:\s*([\d.]+)px/);
+                    const heightPxMatch = obj.style.match(/height:\s*([\d.]+)px/);
+                    if (leftPxMatch)   styleStr += `left:${leftPxMatch[1]}px;`;
+                    if (topPxMatch)    styleStr += `top:${topPxMatch[1]}px;`;
+                    if (!isBtnClass) {
+                      if (widthPxMatch)  styleStr += `width:${widthPxMatch[1]}px;`;
+                      if (heightPxMatch) styleStr += `height:${heightPxMatch[1]}px;`;
+                    }
+                  }
                   el.style.cssText = styleStr;
                 }
                 if (obj.savedData) el.dataset.savedData = obj.savedData;
@@ -2585,12 +2852,210 @@
               });
               updateAnnotationVisibility();
               showToast('アノテーションをファイルから復元しました');
-            } catch (e) {
+        }
+
+        /**
+         * ファイル選択時の処理。JSONを読み込んでアノテーションを復元。
+         */
+        function handleAnnotationFile(event) {
+          const file = event.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            try {
+              const arr = JSON.parse(e.target.result);
+              restoreAnnotationsFromArray(arr);
+            } catch (_) {
               showToast('読込エラー: データが壊れています');
             }
           };
           reader.readAsText(file);
         }
+    /* -------- メディアBlobキャッシュ -------- */
+    /**
+     * ZIPから読み込んだ音声・動画ファイルのBlob URLを格納する辞書。
+     * キー: "ファイル名.mp3" または "ファイル名.mp4"
+     * 値: createObjectURL で生成したBlob URL
+     */
+    const mediaBlobs = {};
+
+    /**
+     * ファイル名と拡張子からメディアの再生URL を解決する。
+     * ZIPから読み込んだファイルがあればBlobURLを返し、
+     * なければサーバー上の従来パスを返す。
+     * @param {string} fileName - 拡張子なしのファイル名
+     * @param {string} ext      - 拡張子（"mp3" または "mp4"）
+     * @returns {string} 再生URL
+     */
+    function resolveMediaSrc(fileName, ext) {
+      const key = `${fileName}.${ext}`;
+      if (mediaBlobs[key]) return mediaBlobs[key];
+      return `/mock/ver2/_media/${encodeURIComponent(fileName)}.${ext}`;
+    }
+
+    /**
+     * ZIPファイルを選択するファイル選択ダイアログを開く。
+     */
+    function loadAnnotationsFromZip() {
+      document.getElementById('zipFileInput').value = '';
+      document.getElementById('zipFileInput').click();
+    }
+
+    /**
+     * ZIPファイル選択時の処理。
+     * ZIP内の音声・動画ファイルをBlobURLに変換してmediaBlobsへ格納し、
+     * annotations.json を読み込んでアノテーションを復元する。
+     * @param {Event} event - ファイル選択イベント
+     */
+    async function handleZipFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const zip = await JSZip.loadAsync(file);
+        // 既存BlobURLを解放してmediaBlobsを初期化
+        Object.values(mediaBlobs).forEach(url => URL.revokeObjectURL(url));
+        Object.keys(mediaBlobs).forEach(k => delete mediaBlobs[k]);
+
+        // 音声・動画ファイルをBlobURLに変換してキャッシュ
+        const mediaExts = ['.mp3', '.mp4', '.wav', '.ogg', '.m4a', '.webm'];
+        const promises = [];
+        zip.forEach((relativePath, zipEntry) => {
+          if (zipEntry.dir) return;
+          const baseName = relativePath.split('/').pop();
+          const lower = baseName.toLowerCase();
+          if (mediaExts.some(ext => lower.endsWith(ext))) {
+            promises.push(
+              zipEntry.async('blob').then(blob => {
+                const mimeMap = {
+                  '.mp3': 'audio/mpeg',
+                  '.wav': 'audio/wav',
+                  '.ogg': 'audio/ogg',
+                  '.m4a': 'audio/mp4',
+                  '.mp4': 'video/mp4',
+                  '.webm': 'video/webm',
+                };
+                const ext = lower.slice(lower.lastIndexOf('.'));
+                const typedBlob = new Blob([blob], { type: mimeMap[ext] || blob.type });
+                mediaBlobs[baseName] = URL.createObjectURL(typedBlob);
+              })
+            );
+          }
+        });
+        await Promise.all(promises);
+
+        // annotations.json を読み込んでアノテーションを復元
+        const jsonFile = zip.file('annotations.json');
+        if (!jsonFile) {
+          showToast('ZIPにannotations.jsonが見つかりません');
+          return;
+        }
+        const jsonText = await jsonFile.async('string');
+        const arr = JSON.parse(jsonText);
+        restoreAnnotationsFromArray(arr);
+        const mediaCount = Object.keys(mediaBlobs).length;
+        showToast(`ZIPから復元しました（メディア: ${mediaCount}件）`);
+      } catch (e) {
+        showToast('ZIP読込エラー: ファイルが壊れているか形式が正しくありません');
+        console.error(e);
+      }
+    }
+
+    /**
+     * 現在のアノテーションと関連する音声・動画ファイルをまとめてZIPで保存する。
+     * annFile フィールドを持つアノテーションのメディアファイルを収集してZIPに同梱する。
+     */
+    async function saveAnnotationsAsZip() {
+      const page = document.getElementById('pageLeft');
+      const pageRect = page.getBoundingClientRect();
+      const elements = page.querySelectorAll('.sticky-note, .ann-object, .ann-icon-obj, .daimon-btn, .kotae-btn, .shomei-btn');
+      const data = Array.from(elements).map(el => {
+        const left = parseFloat(el.style.left) || 0;
+        const top  = parseFloat(el.style.top)  || 0;
+        const width  = parseFloat(el.style.width)  || el.offsetWidth;
+        const height = parseFloat(el.style.height) || el.offsetHeight;
+        const leftPct   = (left   / pageRect.width)  * 100;
+        const topPct    = (top    / pageRect.height) * 100;
+        const widthPct  = (width  / pageRect.width)  * 100;
+        const heightPct = (height / pageRect.height) * 100;
+        return {
+          className:     el.className,
+          type:          el.dataset.type,
+          id:            el.dataset.id,
+          page:          el.dataset.page,
+          style:         `left:${leftPct}%;top:${topPct}%;width:${widthPct}%;height:${heightPct}%;`,
+          savedData:     el.dataset.savedData || '',
+          groupId:       el.dataset.groupId,
+          daimonId:      el.dataset.daimonId,
+          kotaeId:       el.dataset.kotaeId,
+          kotaeOrigBg:   el.dataset.kotaeOrigBg,
+          zuId:          el.dataset.zuId,
+          shomeiId:      el.dataset.shomeiId,
+          shomeiOrigBg:  el.dataset.shomeiOrigBg,
+          shomeiOutline: el.dataset.shomeiOutline,
+          fuhyoji:       el.dataset.fuhyoji,
+        };
+      });
+
+      const zip = new JSZip();
+      zip.file('annotations.json', JSON.stringify(data, null, 2));
+
+      // annFile を持つアノテーションのメディアを収集（重複除去）
+      const mediaExtMap = { audio: 'mp3', video: 'mp4' };
+      const collected = new Set();
+      data.forEach(obj => {
+        try {
+          const sd = JSON.parse(obj.savedData || '{}');
+          const ext = mediaExtMap[obj.type];
+          if (!ext || !sd.annFile) return;
+          const fileName = sd.annFile.trim();
+          if (!fileName) return;
+          const key = `${fileName}.${ext}`;
+          if (!collected.has(key)) {
+            collected.add(key);
+            // BlobURLがあればそこから、なければサーバーパスからfetch
+            const src = mediaBlobs[key] || `/mock/ver2/_media/${encodeURIComponent(fileName)}.${ext}`;
+            zip.file(key, fetch(src).then(r => {
+              if (!r.ok) throw new Error(`fetch failed: ${src}`);
+              return r.blob();
+            }).catch(() => null));
+          }
+        } catch (_) {}
+      });
+
+      try {
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'annotations.zip';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+        showToast('ZIPで保存しました');
+      } catch (e) {
+        showToast('ZIP保存エラー: ' + e.message);
+        console.error(e);
+      }
+    }
+
+    /**
+     * 保存ドロップダウンメニューの表示・非表示を切り替える。
+     * @param {Event} e - クリックイベント
+     */
+    function toggleSaveDropdown(e) {
+      e.stopPropagation();
+      const menu = document.getElementById('saveDropdownMenu');
+      const isOpen = menu.classList.toggle('is-open');
+      if (isOpen) {
+        // メニュー外クリックで閉じる
+        const close = () => {
+          menu.classList.remove('is-open');
+          document.removeEventListener('click', close);
+        };
+        document.addEventListener('click', close);
+      }
+    }
+
     /* -------- 状態管理 -------- */
     let currentPage = 1;
     /** 総ページ数（PDF読み込み後に更新） */
@@ -2994,8 +3459,53 @@
           break;
         }
         case 'plusfile': {
-          const file = (saved.annFile || '').trim() || '未設定';
-          updateStatus(`Plusファイルを開きます: ${file}`);
+          const file = (saved.annFile || '').trim();
+          if (!file) { updateStatus('Plusファイル: ファイルパスが設定されていません'); break; }
+          const showMode = saved.annShowMode || '0';
+          const url = `/mock/${file}`;
+          if (showMode === '1') {
+            // 別タブで開く
+            window.open(url, '_blank', 'noopener');
+            updateStatus(`Plusファイルを別タブで開きます: ${file}`);
+          } else {
+            // ページ内ポップアップ（iframe）で表示
+            const existing = document.getElementById('plusfilePopup');
+            if (existing) existing.remove();
+            const popup = document.createElement('div');
+            popup.id = 'plusfilePopup';
+            popup.innerHTML = `
+              <div class="plusfile-title">
+                <span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">${file}</span>
+                <span class="plusfile-close" id="plusfileClose">×</span>
+              </div>
+              <iframe src="${url}" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+            `;
+            document.body.appendChild(popup);
+            // 画面中央に配置
+            popup.style.left = Math.max(8, (window.innerWidth  - 760) / 2) + 'px';
+            popup.style.top  = Math.max(8, (window.innerHeight - 520) / 2) + 'px';
+            // 閉じるボタン
+            document.getElementById('plusfileClose').onclick = () => popup.remove();
+            // タイトルバードラッグ移動
+            popup.querySelector('.plusfile-title').addEventListener('mousedown', (e) => {
+              if (e.target.id === 'plusfileClose') return;
+              e.preventDefault();
+              const sx = e.clientX, sy = e.clientY;
+              const ol = parseInt(popup.style.left, 10) || 0;
+              const ot = parseInt(popup.style.top,  10) || 0;
+              const onMove = (ev) => {
+                popup.style.left = Math.max(0, Math.min(ol + ev.clientX - sx, window.innerWidth  - 760)) + 'px';
+                popup.style.top  = Math.max(0, Math.min(ot + ev.clientY - sy, window.innerHeight - 520)) + 'px';
+              };
+              const onUp = () => {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup',   onUp);
+              };
+              document.addEventListener('mousemove', onMove);
+              document.addEventListener('mouseup',   onUp);
+            });
+            updateStatus(`Plusファイルを表示: ${file}`);
+          }
           break;
         }
         case 'externallink': {
@@ -3007,12 +3517,126 @@
           }
           break;
         }
-        case 'audio':
-          updateStatus(`音声再生: ${(saved.annFile || '未設定')}`);
+        case 'audio': {
+          const fileName = (saved.annFile || '').trim();
+          if (!fileName) { updateStatus('音声ファイルが設定されていません'); break; }
+          const src = resolveMediaSrc(fileName, 'mp3');
+          const playMode = saved.annPlayMode || '0';
+          if (playMode === '1') {
+            // コントローラーなし：そのまま再生
+            const audio = new Audio(src);
+            audio.play().catch(() => updateStatus('音声の再生に失敗しました'));
+            updateStatus(`音声再生中: ${fileName}`);
+          } else {
+            // コントローラーあり：フローティングプレーヤーを表示
+            const existing = document.getElementById('audioPlayerPopup');
+            if (existing) existing.remove();
+            const popup = document.createElement('div');
+            popup.id = 'audioPlayerPopup';
+            popup.innerHTML = `
+              <div class="audio-player-title">
+                <span style="font-size:12px;font-weight:700;">▶ ${fileName}</span>
+                <span id="audioPlayerClose">×</span>
+              </div>
+              <div class="audio-player-body">
+                <audio controls autoplay src="${src}"></audio>
+              </div>
+            `;
+            document.body.appendChild(popup);
+            // 画面中央下寄りに配置
+            const pw = popup.offsetWidth || 320;
+            const ph = popup.offsetHeight || 100;
+            popup.style.left = Math.max(8, (window.innerWidth  - pw) / 2) + 'px';
+            popup.style.top  = Math.max(8, window.innerHeight - ph - 60) + 'px';
+            // 閉じるボタン
+            document.getElementById('audioPlayerClose').onclick = () => {
+              popup.querySelector('audio')?.pause();
+              popup.remove();
+            };
+            // タイトルバードラッグ移動
+            const titleBar = popup.querySelector('.audio-player-title');
+            titleBar.addEventListener('mousedown', (e) => {
+              if (e.target.id === 'audioPlayerClose') return;
+              e.preventDefault();
+              const sx = e.clientX, sy = e.clientY;
+              const ol = parseInt(popup.style.left, 10) || 0;
+              const ot = parseInt(popup.style.top,  10) || 0;
+              const onMove = (ev) => {
+                popup.style.left = Math.max(0, Math.min(ol + ev.clientX - sx, window.innerWidth  - popup.offsetWidth))  + 'px';
+                popup.style.top  = Math.max(0, Math.min(ot + ev.clientY - sy, window.innerHeight - popup.offsetHeight)) + 'px';
+              };
+              const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+              document.addEventListener('mousemove', onMove);
+              document.addEventListener('mouseup',   onUp);
+            });
+            updateStatus(`音声再生中: ${fileName}`);
+          }
           break;
-        case 'video':
-          updateStatus(`動画再生: ${(saved.annFile || saved.annUrl || '未設定')}`);
+        }
+        case 'video': {
+          const fileName = (saved.annFile || '').trim();
+          const videoSrc = saved.annVideoSrc || '0';
+          const showMode = saved.annShowMode || '0';
+
+          /**
+           * 動画モーダルを開くヘルパー。
+           * @param {string} titleText - タイトルバーに表示するテキスト
+           * @param {string} bodyHtml  - モーダル本体に挿入するHTML
+           */
+          const openVideoModal = (titleText, bodyHtml) => {
+            // 既存モーダルがあれば動画を停止してから除去
+            const prev = document.getElementById('videoPlayerModal');
+            if (prev) {
+              prev.querySelector('video')?.pause();
+              prev.remove();
+            }
+            const modal = document.createElement('div');
+            modal.id = 'videoPlayerModal';
+            modal.innerHTML = `
+              <div class="video-modal-box">
+                <div class="video-modal-title">
+                  <span>▶ ${titleText}</span>
+                  <span class="video-modal-close">×</span>
+                </div>
+                <div class="video-modal-body">${bodyHtml}</div>
+              </div>
+            `;
+            document.body.appendChild(modal);
+            // 次フレームで is-open を付与してフェードイン
+            requestAnimationFrame(() => modal.classList.add('is-open'));
+            // 閉じる処理
+            const closeModal = () => {
+              modal.querySelector('video')?.pause();
+              modal.remove();
+              document.removeEventListener('keydown', onKeyDown);
+            };
+            modal.querySelector('.video-modal-close').addEventListener('click', closeModal);
+            // オーバーレイ背景クリックで閉じる
+            modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+            // Escキーで閉じる
+            const onKeyDown = (e) => { if (e.key === 'Escape') closeModal(); };
+            document.addEventListener('keydown', onKeyDown);
+          };
+
+          if (videoSrc === '1') {
+            // 外部タグをモーダルで表示
+            openVideoModal('動画', fileName);
+            updateStatus('動画を表示中（外部タグ）');
+          } else {
+            if (!fileName) { updateStatus('動画ファイルが設定されていません'); break; }
+            const src = resolveMediaSrc(fileName, 'mp4');
+            if (showMode === '1') {
+              // 別タブで開く
+              window.open(src, '_blank', 'noopener');
+              updateStatus(`動画を別タブで開きます: ${fileName}`);
+            } else {
+              // モーダルで再生
+              openVideoModal(fileName, `<video controls autoplay src="${src}"></video>`);
+              updateStatus(`動画再生中: ${fileName}`);
+            }
+          }
           break;
+        }
         default:
           updateStatus(`${ann.dataset.type} を実行しました`);
       }
@@ -4618,6 +5242,34 @@
       document.getElementById('qcCancelBtn').onclick = closeQuickCreateDialog;
       document.getElementById('qcCloseBtn').onclick  = closeQuickCreateDialog;
 
+      // ダイアログタイトルバーをドラッグしてポップアップを移動できるようにする
+      const titleBar = popup.querySelector('.dialog-title');
+      titleBar.addEventListener('mousedown', (e) => {
+        // × ボタンはドラッグ対象外
+        if (e.target.id === 'qcCloseBtn') return;
+        e.preventDefault();
+        const startX   = e.clientX;
+        const startY   = e.clientY;
+        const origLeft = parseInt(popup.style.left, 10) || 0;
+        const origTop  = parseInt(popup.style.top,  10) || 0;
+
+        const onMove = (ev) => {
+          const dx = ev.clientX - startX;
+          const dy = ev.clientY - startY;
+          // ビューポートからはみ出さないよう範囲を制限する
+          const newLeft = Math.max(0, Math.min(origLeft + dx, window.innerWidth  - popup.offsetWidth));
+          const newTop  = Math.max(0, Math.min(origTop  + dy, window.innerHeight - popup.offsetHeight));
+          popup.style.left = newLeft + 'px';
+          popup.style.top  = newTop  + 'px';
+        };
+        const onUp = () => {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup',   onUp);
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup',   onUp);
+      });
+
       updateStatus(`${cfg.label}の設定を変更して「更新する」を押してください`);
     }
 
@@ -4685,6 +5337,31 @@
       document.getElementById('qcOkBtn').onclick     = () => confirmQuickCreate(type, pageX, pageY);
       document.getElementById('qcCancelBtn').onclick = closeQuickCreateDialog;
       document.getElementById('qcCloseBtn').onclick  = closeQuickCreateDialog;
+
+      // ダイアログタイトルバーをドラッグしてポップアップを移動できるようにする
+      const titleBar = popup.querySelector('.dialog-title');
+      titleBar.addEventListener('mousedown', (e) => {
+        if (e.target.id === 'qcCloseBtn') return;
+        e.preventDefault();
+        const startX   = e.clientX;
+        const startY   = e.clientY;
+        const origLeft = parseInt(popup.style.left, 10) || 0;
+        const origTop  = parseInt(popup.style.top,  10) || 0;
+        const onMove = (ev) => {
+          const dx = ev.clientX - startX;
+          const dy = ev.clientY - startY;
+          const newLeft = Math.max(0, Math.min(origLeft + dx, window.innerWidth  - popup.offsetWidth));
+          const newTop  = Math.max(0, Math.min(origTop  + dy, window.innerHeight - popup.offsetHeight));
+          popup.style.left = newLeft + 'px';
+          popup.style.top  = newTop  + 'px';
+        };
+        const onUp = () => {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup',   onUp);
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup',   onUp);
+      });
 
       updateStatus(`${cfg.label}を設定して「作成」を押してください`);
     }
@@ -4840,6 +5517,26 @@
       form.appendChild(colDt);
       form.appendChild(colDd);
 
+      // アイコン型：W/H入力時に縦横比を維持して反対軸を自動更新（applyLiveUpdateより先に登録して先行実行させる）
+      const _selectedIconObj = document.querySelector('.ann-icon-obj.is-selected');
+      if (_selectedIconObj) {
+        const _initAspect = _selectedIconObj.offsetWidth / (_selectedIconObj.offsetHeight || 1);
+        const _wEl = document.getElementById('annWidth');
+        const _hEl = document.getElementById('annHeight');
+        if (_wEl && _hEl) {
+          _wEl.addEventListener('input', () => {
+            // 幅変更時：縦横比から高さを算出（最小 14px）
+            const newW = Math.max(14, parseFloat(_wEl.value) || 14);
+            _hEl.value = Math.max(14, Math.round(newW / _initAspect));
+          });
+          _hEl.addEventListener('input', () => {
+            // 高さ変更時：縦横比から幅を算出（最小 14px）
+            const newH = Math.max(14, parseFloat(_hEl.value) || 14);
+            _wEl.value = Math.max(14, Math.round(newH * _initAspect));
+          });
+        }
+      }
+
       // 選択中オブジェクトへの即時反映リスナーを登録
       // サイドメニュー・ダイアログ両対応でUndoが積まれるよう、input/change両方でapplyLiveUpdateを呼ぶ
       ['annPosX', 'annPosY', 'annWidth', 'annHeight'].forEach(id => {
@@ -4906,7 +5603,13 @@
           if (w > 0) target.style.width  = w + 'px';
           if (h > 0) target.style.height = h + 'px';
           target.style.background = color;
-        } else if (!target.classList.contains('ann-icon-obj')) {
+        } else if (target.classList.contains('ann-icon-obj')) {
+          // アイコン型：縦横比維持でサイズ変更（最小 14px、背景色は変更しない）
+          // ※入力時の縦横比連動はリスナー側で処理済みのため、ここでは値をそのまま適用する
+          const ICON_MIN = 14;
+          if (w > 0) target.style.width  = Math.max(ICON_MIN, w) + 'px';
+          if (h > 0) target.style.height = Math.max(ICON_MIN, h) + 'px';
+        } else {
           const bgColor = ANN_COLOR_OPTIONS[colorIdx]?.value ?? '#aaa';
           if (w > 0) target.style.width  = w + 'px';
           if (h > 0) target.style.height = h + 'px';
@@ -4939,7 +5642,22 @@
             if (dw !== 0) target.style.width  = Math.max(10, (parseFloat(target.style.width)  || 0) + dw) + 'px';
             if (dh !== 0) target.style.height = Math.max(10, (parseFloat(target.style.height) || 0) + dh) + 'px';
             target.style.background = color;
-          } else if (!target.classList.contains('ann-icon-obj')) {
+          } else if (target.classList.contains('ann-icon-obj')) {
+            // アイコン型：縦横比を維持してサイズをデルタ分変更（最小 14px、背景色は変更しない）
+            const ICON_MIN = 14;
+            const curW = parseFloat(target.style.width)  || target.offsetWidth;
+            const curH = parseFloat(target.style.height) || target.offsetHeight;
+            const aspect = curW / (curH || 1);
+            if (dw !== 0) {
+              const newW = Math.max(ICON_MIN, curW + dw);
+              target.style.width  = newW + 'px';
+              target.style.height = Math.max(ICON_MIN, Math.round(newW / aspect)) + 'px';
+            } else if (dh !== 0) {
+              const newH = Math.max(ICON_MIN, curH + dh);
+              target.style.height = newH + 'px';
+              target.style.width  = Math.max(ICON_MIN, Math.round(newH * aspect)) + 'px';
+            }
+          } else {
             // マーカー型：サイズをデルタ分変更（最小10px）、塗り色は絶対値適用
             const bgColor = ANN_COLOR_OPTIONS[colorIdx]?.value ?? '#aaa';
             if (dw !== 0) target.style.width  = Math.max(10, (parseFloat(target.style.width)  || 0) + dw) + 'px';
@@ -5052,12 +5770,13 @@
         form.appendChild(_buildTextDD('annUrl', savedData.annUrl || '', 'https://...'));
 
       } else if (type === 'audio') {
+        const playMode = savedData.annPlayMode || '0';
         form.appendChild(_buildTextDt('ファイル名'));
         const fileDd = _buildTextDD('annFile', savedData.annFile || '', 'ファイル名を入力');
         fileDd.querySelector('input').insertAdjacentHTML('afterend',
           '<p class="field-note">※ファイル名の拡張子「.mp3」は除く</p>');
+        _appendDropZone(fileDd, 'annFile', 'audio');
         form.appendChild(fileDd);
-        const playMode = savedData.annPlayMode || '0';
         form.appendChild(_buildRadioDt('再生方法'));
         form.appendChild(_buildRadioDD('annPlayMode', 'annPlayModeRadio', playMode, [
           { value: '0', label: 'コントローラーあり' },
@@ -5075,6 +5794,7 @@
         const fileDd = _buildTextDD('annFile', savedData.annFile || '', 'ファイル名を入力');
         fileDd.querySelector('input').insertAdjacentHTML('afterend',
           '<p class="field-note">※ファイル名の拡張子「.mp4」は除く</p>');
+        _appendDropZone(fileDd, 'annFile', 'video');
         form.appendChild(fileDd);
         const showMode = savedData.annShowMode || '0';
         form.appendChild(_buildRadioDt('表示方法'));
@@ -5119,8 +5839,11 @@
         `<label><input type="radio" name="${radioName}" value="${it.value}"${currentVal === it.value ? ' checked' : ''}> ${it.label}</label>`
       ).join('');
       dd.innerHTML = `<div class="radio-row">${radiosHtml}</div><input type="hidden" id="${hiddenId}" value="${currentVal}">`;
+      // dd スコープ内の hidden input を直接参照することで、
+      // 同一 id が複数存在する場合でも正しい要素が更新されるようにする
+      const hiddenInput = dd.querySelector(`input[type="hidden"][id="${hiddenId}"]`);
       dd.querySelectorAll(`input[name="${radioName}"]`).forEach(r => {
-        r.addEventListener('change', () => { document.getElementById(hiddenId).value = r.value; });
+        r.addEventListener('change', () => { hiddenInput.value = r.value; });
       });
       return dd;
     }
@@ -5141,6 +5864,71 @@
       inp.placeholder = placeholder;
       dd.appendChild(inp);
       return dd;
+    }
+
+    /**
+     * ファイルドロップゾーンを dd 要素に追加するヘルパー。
+     * ドロップされたファイルをサーバーにアップロードし、inputId のフィールドに
+     * 拡張子なしのファイル名をセットする。
+     * @param {HTMLElement} ddEl      - 追加先の dd 要素
+     * @param {string}      inputId   - ファイル名を反映する input の id
+     * @param {string}      mediaType - 'audio' または 'video'
+     */
+    function _appendDropZone(ddEl, inputId, mediaType) {
+      const extHint = mediaType === 'audio' ? 'MP3' : 'MP4';
+      const zone = document.createElement('div');
+      zone.className = 'file-drop-zone';
+      zone.innerHTML = `
+        <p>ここに ${extHint} ファイルをドロップ</p>
+        <p class="drop-status"></p>
+      `;
+      const statusEl = zone.querySelector('.drop-status');
+
+      // ドラッグオーバー：ハイライト表示
+      zone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        zone.classList.add('is-dragover');
+      });
+
+      // ドラッグ離脱：ハイライト解除
+      zone.addEventListener('dragleave', (e) => {
+        e.stopPropagation();
+        zone.classList.remove('is-dragover');
+      });
+
+      // ドロップ：ファイルをアップロードしてファイル名をセット
+      zone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        zone.classList.remove('is-dragover');
+
+        const file = e.dataTransfer.files[0];
+        if (!file) return;
+
+        // 拡張子なしのファイル名を入力欄に即時反映
+        const baseName = file.name.replace(/\.[^/.]+$/, '');
+        const fileInput = ddEl.querySelector(`#${inputId}`);
+        if (fileInput) fileInput.value = baseName;
+
+        // サーバーへアップロード
+        statusEl.textContent = 'アップロード中...';
+        statusEl.className = 'drop-status';
+        try {
+          const res = await fetch(`/upload?filename=${encodeURIComponent(file.name)}`, {
+            method: 'POST',
+            body: file,
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          statusEl.textContent = `✔ ${file.name} をアップロードしました`;
+          statusEl.className = 'drop-status is-success';
+        } catch (err) {
+          statusEl.textContent = `✖ アップロード失敗: ${err.message}`;
+          statusEl.className = 'drop-status is-error';
+        }
+      });
+
+      ddEl.appendChild(zone);
     }
 
     /**
@@ -5188,9 +5976,9 @@
       // 共通フィールドを生成（常時表示）
       buildCommonFields(commonForm, type, savedData, initRect);
 
-      // アイコン型オブジェクト選択時は変形・塗りフィールドをグレーアウト
+      // アイコン型オブジェクト選択時は塗りフィールドをグレーアウト（変形W/Hは有効）
       const isIconObj = existingEl?.classList.contains('ann-icon-obj');
-      commonForm.querySelectorAll('[data-field-group="transform"], [data-field-group="fill"]').forEach(el => {
+      commonForm.querySelectorAll('[data-field-group="fill"]').forEach(el => {
         el.classList.toggle('is-field-disabled', !!isIconObj);
       });
 
@@ -5327,9 +6115,8 @@
 
           if (displayType === 'icon') {
             // アイコン型に変更または絶対アイコン型のまま更新
+            // width/height はリサイズで設定済みのサイズを保持する（クリアするとSVGデフォルトサイズで膨張するため）
             existingEl.className = 'ann-icon-obj';
-            existingEl.style.width  = '';
-            existingEl.style.height = '';
             existingEl.style.background = '';
             existingEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${cfg.iconSvg}</svg>`;
           } else if (displayType === 'page-color') {
@@ -5366,7 +6153,7 @@
           if (displayType === 'icon') {
             // アイコン型：円形ボタン
             ann.className = 'ann-icon-obj';
-            ann.style.cssText = `left:${x}px; top:${y}px;`;
+            ann.style.cssText = `left:${x}px; top:${y}px; width:48px; height:48px;`;
             ann.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${cfg.iconSvg}</svg>`;
           } else if (displayType === 'page-color') {
             // 紙面カラー型：ラベルなしの透明ホットスポット
@@ -5386,7 +6173,12 @@
           addAnnClickHandler(ann);
 
           makeDraggable(ann);
-          if (displayType !== 'icon') makeResizable(ann);
+          if (displayType === 'icon') {
+            // アイコン型：縦横比を維持してリサイズ（最小サイズ 14px）
+            makeResizable(ann, { lockAspectRatio: true, minSize: 14 });
+          } else {
+            makeResizable(ann);
+          }
           ann.dataset.page = currentPage;
           document.getElementById('pageLeft').appendChild(ann);
           pushUndo({ type: 'create', elements: [ann] });
@@ -5575,12 +6367,26 @@
      * アイコン型（.ann-icon-obj）には適用しない。
      * @param {HTMLElement} el - リサイズ対象要素
      */
-    function makeResizable(el) {
+    /**
+     * 要素にリサイズハンドルを追加する。
+     * @param {HTMLElement} el - リサイズ対象要素
+     * @param {object} [options] - オプション
+     * @param {boolean} [options.lockAspectRatio=false] - true にすると縦横比を維持してリサイズ（コーナー4点のみ表示）
+     * @param {number} [options.minSize=10] - リサイズ時の最小サイズ（px）
+     */
+    function makeResizable(el, options = {}) {
       // 既存ハンドルを削除（クローン再初期化時の重複防止）
       el.querySelectorAll('.resize-handle').forEach(h => h.remove());
 
-      // コーナー4点 + 各辺中点4点 = 計8ハンドル
-      ['tl', 'tc', 'tr', 'ml', 'mr', 'bl', 'bc', 'br'].forEach(corner => {
+      const lockAspectRatio = options.lockAspectRatio || false;
+      const MIN_SIZE        = options.minSize || 10;
+
+      // lockAspectRatio が true の場合はコーナー4点のみ（辺中点は縦横比を崩すため除外）
+      const corners = lockAspectRatio
+        ? ['tl', 'tr', 'bl', 'br']
+        : ['tl', 'tc', 'tr', 'ml', 'mr', 'bl', 'bc', 'br'];
+
+      corners.forEach(corner => {
         const handle = document.createElement('div');
         handle.className = 'resize-handle';
         handle.dataset.corner = corner;
@@ -5596,9 +6402,10 @@
           const startTop    = parseInt(el.style.top,    10) || 0;
           const startWidth  = el.offsetWidth;
           const startHeight = el.offsetHeight;
-          const MIN_SIZE    = 10;
+          // 縦横比を事前に計算（lockAspectRatio 時に使用）
+          const aspectRatio = lockAspectRatio ? (startWidth / startHeight) : null;
 
-          // Shift 軸固定はコーナーハンドルのみ適用
+          // Shift 軸固定はコーナーハンドルのみ・縦横比ロック時は無効
           const isCorner = ['tl', 'tr', 'bl', 'br'].includes(corner);
           let axis       = null;
           let prevShift  = false;
@@ -5613,7 +6420,7 @@
             let dx = (ev.clientX - startX) / scale;
             let dy = (ev.clientY - startY) / scale;
 
-            if (isCorner && ev.shiftKey) {
+            if (isCorner && ev.shiftKey && !lockAspectRatio) {
               // Shift を押した瞬間：基準点と dx/dy を記録して軸をリセット
               if (!prevShift) {
                 shiftSnapX = ev.clientX;
@@ -5629,48 +6436,77 @@
               }
               if (axis === 'h') dy = frozenDy;
               if (axis === 'v') dx = frozenDx;
-            } else if (isCorner) {
+            } else if (isCorner && !lockAspectRatio) {
               axis       = null;
               shiftSnapX = shiftSnapY = frozenDx = frozenDy = null;
             }
             prevShift = ev.shiftKey;
 
-            if (corner === 'tl') {
-              const newW = Math.max(startWidth  - dx, MIN_SIZE);
-              const newH = Math.max(startHeight - dy, MIN_SIZE);
-              el.style.left   = (startLeft + startWidth  - newW) + 'px';
-              el.style.top    = (startTop  + startHeight - newH) + 'px';
-              el.style.width  = newW + 'px';
-              el.style.height = newH + 'px';
-            } else if (corner === 'tc') {
-              // 上辺中点：縦方向のみ
-              const newH = Math.max(startHeight - dy, MIN_SIZE);
-              el.style.top    = (startTop  + startHeight - newH) + 'px';
-              el.style.height = newH + 'px';
-            } else if (corner === 'tr') {
-              const newH = Math.max(startHeight - dy, MIN_SIZE);
-              el.style.top    = (startTop  + startHeight - newH) + 'px';
-              el.style.width  = Math.max(startWidth  + dx, MIN_SIZE) + 'px';
-              el.style.height = newH + 'px';
-            } else if (corner === 'ml') {
-              // 左辺中点：横方向のみ
-              const newW = Math.max(startWidth  - dx, MIN_SIZE);
-              el.style.left  = (startLeft + startWidth  - newW) + 'px';
-              el.style.width = newW + 'px';
-            } else if (corner === 'mr') {
-              // 右辺中点：横方向のみ
-              el.style.width = Math.max(startWidth + dx, MIN_SIZE) + 'px';
-            } else if (corner === 'bl') {
-              const newW = Math.max(startWidth  - dx, MIN_SIZE);
-              el.style.left   = (startLeft + startWidth  - newW) + 'px';
-              el.style.width  = newW + 'px';
-              el.style.height = Math.max(startHeight + dy, MIN_SIZE) + 'px';
-            } else if (corner === 'bc') {
-              // 下辺中点：縦方向のみ
-              el.style.height = Math.max(startHeight + dy, MIN_SIZE) + 'px';
-            } else if (corner === 'br') {
-              el.style.width  = Math.max(startWidth  + dx, MIN_SIZE) + 'px';
-              el.style.height = Math.max(startHeight + dy, MIN_SIZE) + 'px';
+            if (lockAspectRatio) {
+              // 縦横比維持リサイズ：width を基準に height を算出
+              if (corner === 'tl') {
+                const newW = Math.max(startWidth  - dx, MIN_SIZE);
+                const newH = newW / aspectRatio;
+                el.style.left   = (startLeft + startWidth  - newW) + 'px';
+                el.style.top    = (startTop  + startHeight - newH) + 'px';
+                el.style.width  = newW + 'px';
+                el.style.height = newH + 'px';
+              } else if (corner === 'tr') {
+                const newW = Math.max(startWidth  + dx, MIN_SIZE);
+                const newH = newW / aspectRatio;
+                el.style.top    = (startTop  + startHeight - newH) + 'px';
+                el.style.width  = newW + 'px';
+                el.style.height = newH + 'px';
+              } else if (corner === 'bl') {
+                const newW = Math.max(startWidth  - dx, MIN_SIZE);
+                const newH = newW / aspectRatio;
+                el.style.left   = (startLeft + startWidth  - newW) + 'px';
+                el.style.width  = newW + 'px';
+                el.style.height = newH + 'px';
+              } else if (corner === 'br') {
+                const newW = Math.max(startWidth  + dx, MIN_SIZE);
+                const newH = newW / aspectRatio;
+                el.style.width  = newW + 'px';
+                el.style.height = newH + 'px';
+              }
+            } else {
+              if (corner === 'tl') {
+                const newW = Math.max(startWidth  - dx, MIN_SIZE);
+                const newH = Math.max(startHeight - dy, MIN_SIZE);
+                el.style.left   = (startLeft + startWidth  - newW) + 'px';
+                el.style.top    = (startTop  + startHeight - newH) + 'px';
+                el.style.width  = newW + 'px';
+                el.style.height = newH + 'px';
+              } else if (corner === 'tc') {
+                // 上辺中点：縦方向のみ
+                const newH = Math.max(startHeight - dy, MIN_SIZE);
+                el.style.top    = (startTop  + startHeight - newH) + 'px';
+                el.style.height = newH + 'px';
+              } else if (corner === 'tr') {
+                const newH = Math.max(startHeight - dy, MIN_SIZE);
+                el.style.top    = (startTop  + startHeight - newH) + 'px';
+                el.style.width  = Math.max(startWidth  + dx, MIN_SIZE) + 'px';
+                el.style.height = newH + 'px';
+              } else if (corner === 'ml') {
+                // 左辺中点：横方向のみ
+                const newW = Math.max(startWidth  - dx, MIN_SIZE);
+                el.style.left  = (startLeft + startWidth  - newW) + 'px';
+                el.style.width = newW + 'px';
+              } else if (corner === 'mr') {
+                // 右辺中点：横方向のみ
+                el.style.width = Math.max(startWidth + dx, MIN_SIZE) + 'px';
+              } else if (corner === 'bl') {
+                const newW = Math.max(startWidth  - dx, MIN_SIZE);
+                el.style.left   = (startLeft + startWidth  - newW) + 'px';
+                el.style.width  = newW + 'px';
+                el.style.height = Math.max(startHeight + dy, MIN_SIZE) + 'px';
+              } else if (corner === 'bc') {
+                // 下辺中点：縦方向のみ
+                el.style.height = Math.max(startHeight + dy, MIN_SIZE) + 'px';
+              } else if (corner === 'br') {
+                el.style.width  = Math.max(startWidth  + dx, MIN_SIZE) + 'px';
+                el.style.height = Math.max(startHeight + dy, MIN_SIZE) + 'px';
+              }
             }
           };
 
@@ -5713,7 +6549,12 @@
         addShomeiClickHandler(el);
       } else if (el.dataset.type) {
         addAnnClickHandler(el);
-        if (el.classList.contains('ann-object')) makeResizable(el);
+        if (el.classList.contains('ann-icon-obj')) {
+          // アイコン型：縦横比を維持してリサイズ（最小サイズ 14px）
+          makeResizable(el, { lockAspectRatio: true, minSize: 14 });
+        } else if (el.classList.contains('ann-object')) {
+          makeResizable(el);
+        }
       }
     }
 
@@ -6869,6 +7710,9 @@
       panOffsetY = 0;
       document.getElementById('pageContainer').style.transform = 'none';
 
+      // フィット変更後にページサイズが変わるため PDF を再描画してcanvasサイズを合わせる
+      if (pdfDoc) renderPage(currentPage);
+
       updateAlignPanel();
       updateStatus('表示フィット: ' + { page: 'ページ全体', height: '高さ', width: '幅' }[mode]);
     }
@@ -7256,6 +8100,8 @@
     resizePage();
 
     // ウィンドウリサイズ時に追従（アノテーションもページサイズ変化に追従する）
+    // ウィンドウリサイズ時は連続発火を抑えるためデバウンス処理を行う
+    let _resizeTimer = null;
     window.addEventListener('resize', () => {
       const page = document.getElementById('pageLeft');
       const oldW = page.offsetWidth;
@@ -7263,6 +8109,11 @@
       const newW = page.offsetWidth;
       if (oldW > 0 && newW !== oldW) {
         scaleAnnotations(newW / oldW);
+      }
+      // ページサイズ変化後にcanvasサイズを同期するため PDF を再描画する
+      if (pdfDoc) {
+        clearTimeout(_resizeTimer);
+        _resizeTimer = setTimeout(() => renderPage(currentPage), 150);
       }
     });
 
