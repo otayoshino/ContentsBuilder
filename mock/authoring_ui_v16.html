@@ -3491,7 +3491,8 @@
           const file = (saved.annFile || '').trim();
           if (!file) { updateStatus('Plusファイル: ファイルパスが設定されていません'); break; }
           const showMode = saved.annShowMode || '0';
-          const url = `/mock/${file}`;
+          // 相対パスで解決（GitHub Pages 等の絶対パスが異なる環境でも動作するよう ./ を使用）
+          const url = `./${file}`;
           if (showMode === '1') {
             // 別タブで開く
             window.open(url, '_blank', 'noopener');
