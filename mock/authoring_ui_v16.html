@@ -2715,8 +2715,9 @@
             const topPct = (top / pageRect.height) * 100;
             const widthPct = (width / pageRect.width) * 100;
             const heightPct = (height / pageRect.height) * 100;
-            // styleを%で構築
-            const style = `left:${leftPct}%;top:${topPct}%;width:${widthPct}%;height:${heightPct}%;`;
+            // styleを%で構築（背景色も保存）
+            const bg = el.style.background || el.style.backgroundColor || '';
+            const style = `left:${leftPct}%;top:${topPct}%;width:${widthPct}%;height:${heightPct}%;${bg ? 'background:' + bg + ';' : ''}`;
             const obj = {
               className: el.className,
               type: el.dataset.type,
@@ -2792,6 +2793,8 @@
                   const widthPctMatch  = obj.style.match(/width:\s*([\d.]+)%/);
                   const heightPctMatch = obj.style.match(/height:\s*([\d.]+)%/);
                   let styleStr = '';
+                  // 背景色を抽出（付箋の塗り復元に必要）
+                  const bgMatch = obj.style.match(/background:([^;]+)/);
                   if (leftPctMatch) {
                     // (1) % 形式（saveAnnotations が出力する現行フォーマット）
                     styleStr += `left:${parseFloat(leftPctMatch[1]) * pageRect.width / 100}px;`;
@@ -2800,6 +2803,7 @@
                       if (widthPctMatch)  styleStr += `width:${parseFloat(widthPctMatch[1]) * pageRect.width / 100}px;`;
                       if (heightPctMatch) styleStr += `height:${parseFloat(heightPctMatch[1]) * pageRect.height / 100}px;`;
                     }
+                    if (bgMatch) styleStr += `background:${bgMatch[1].trim()};`;
                   } else if (obj.xRatio !== undefined) {
                     // (2) xRatio/yRatio/wRatio/hRatio 形式（旧バージョンの JSON）
                     styleStr += `left:${obj.xRatio * pageRect.width}px;`;
@@ -2808,6 +2812,7 @@
                       if (obj.wRatio !== undefined) styleStr += `width:${obj.wRatio * pageRect.width}px;`;
                       if (obj.hRatio !== undefined) styleStr += `height:${obj.hRatio * pageRect.height}px;`;
                     }
+                    if (bgMatch) styleStr += `background:${bgMatch[1].trim()};`;
                   } else {
                     // (3) px 形式（style に直接 px 値が入っているフォーマット）
                     const leftPxMatch   = obj.style.match(/left:\s*([\d.]+)px/);
@@ -2820,6 +2825,7 @@
                       if (widthPxMatch)  styleStr += `width:${widthPxMatch[1]}px;`;
                       if (heightPxMatch) styleStr += `height:${heightPxMatch[1]}px;`;
                     }
+                    if (bgMatch) styleStr += `background:${bgMatch[1].trim()};`;
                   }
                   el.style.cssText = styleStr;
                 }
