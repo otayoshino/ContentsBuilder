@@ -2829,6 +2829,13 @@
                   }
                   el.style.cssText = styleStr;
                 }
+                // 付箋の背景色を復元する
+                // style に background が含まれていない旧形式JSONの場合は savedData.annColor から引き当てる
+                if (el.classList.contains('sticky-note') && !el.style.background) {
+                  let colorIdx = 0;
+                  try { colorIdx = parseInt((JSON.parse(obj.savedData || '{}')).annColor ?? '0', 10); } catch (_) {}
+                  el.style.background = STICKY_COLOR_MAP[colorIdx] ?? STICKY_COLOR_MAP[0];
+                }
                 if (obj.savedData) el.dataset.savedData = obj.savedData;
                 if (obj.groupId) el.dataset.groupId = obj.groupId;
                 if (obj.daimonId) el.dataset.daimonId = obj.daimonId;
