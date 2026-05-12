@@ -27,7 +27,6 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
-      overflow: hidden;
       color: #333;
       -webkit-user-select: none;
       user-select: none;
@@ -284,9 +283,21 @@
 
     /* アクションブロック */
     .blk.action {
-      margin-left: auto;
-      width: 60px;
-      margin-left: 0;
+      flex-shrink: 0;
+      gap: 2px;
+    }
+
+    /* ナビ内ツールチップはボタン下に表示 */
+    .nav [data-tip]:hover::after {
+      bottom: auto;
+      top: calc(100% + 6px);
+    }
+
+    /* アクションブロック内ツールチップはさらに右寄せ（右端切れ防止） */
+    .blk.action [data-tip]:hover::after {
+      left: auto;
+      right: 0;
+      transform: none;
     }
 
     /* ============================
@@ -2228,7 +2239,7 @@
 
       <!-- ページ操作ブロック -->
       <div class="blk page">
-        <button class="nav-btn disabled" data-tip="目次へジャンプ" onclick="">
+        <button class="nav-btn disabled" onclick="">
           <!-- TOCアイコン -->
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
@@ -2236,12 +2247,12 @@
             <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
           </svg>
         </button>
-        <button class="nav-btn disabled" data-tip="最初のページ" onclick="goFirstPage()">
+        <button class="nav-btn disabled" onclick="goFirstPage()">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
           </svg>
         </button>
-        <button class="nav-btn disabled" data-tip="前のページ" onclick="prevPage()">
+        <button class="nav-btn disabled" onclick="prevPage()">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
           </svg>
@@ -2250,12 +2261,12 @@
           <input type="text" inputmode="numeric" class="input" id="pageInput" value="1">
           <span class="text" id="totalPagesText">/ 144</span>
         </div>
-        <button class="nav-btn" data-tip="次のページ" onclick="nextPage()">
+        <button class="nav-btn" onclick="nextPage()">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
           </svg>
         </button>
-        <button class="nav-btn" data-tip="最後のページ" onclick="goLastPage()">
+        <button class="nav-btn" onclick="goLastPage()">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M6 18l8.5-6L6 6v12zm2-8.14L11.03 12 8 14.14V9.86zM16 6h2v12h-2z"/>
           </svg>
@@ -2306,7 +2317,7 @@
     <div class="blk action">
       <!-- 保存ドロップダウン -->
       <div class="save-dropdown-wrap">
-        <button class="nav-btn" data-tip="アノテーション保存" onclick="toggleSaveDropdown(event)">
+        <button class="nav-btn" data-tip="保存" onclick="toggleSaveDropdown(event)">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M17 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16H7V5h10v14zm-5-3h2v2h-2v-2zm0-8h2v6h-2V8z"/>
           </svg>
@@ -2329,17 +2340,17 @@
       <!-- 読込用ファイル選択input（非表示） -->
       <input type="file" id="annotationFileInput" accept="application/json" style="display:none" onchange="handleAnnotationFile(event)">
       <input type="file" id="zipFileInput" accept=".zip" style="display:none" onchange="handleZipFile(event)">
-      <button class="nav-btn" data-tip="アノテーション読込（JSON）" onclick="loadAnnotations()">
+      <button class="nav-btn" data-tip="JSON読込" onclick="loadAnnotations()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7v2H5v14h14v-7h2v7a2 2 0 0 1-2 2zm-7-7V3.5L18.5 9H13z"/>
         </svg>
       </button>
-      <button class="nav-btn" data-tip="ZIPから読込（JSON＋音声・動画）" onclick="loadAnnotationsFromZip()">
+      <button class="nav-btn" data-tip="ZIP読込" onclick="loadAnnotationsFromZip()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <path d="M20 6h-2.18C17.4 4.84 16.3 4 15 4H9C7.7 4 6.6 4.84 6.18 6H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-8 11l-5-5 1.41-1.41L12 14.17l6.59-6.58L20 9l-8 8z"/>
         </svg>
       </button>
-      <button class="nav-btn" data-tip="ナビを折りたたむ" onclick="toggleNav()">
+      <button class="nav-btn" data-tip="折りたたむ" onclick="toggleNav()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
           <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
         </svg>
@@ -3066,6 +3077,8 @@
     let _currentRenderTask = null;
     /** 描画世代カウンター：非同期待機中に新しい renderPage が呼ばれたを検知する */
     let _renderVersion = 0;
+    /** ズーム変更後の再描画デバウンスタイマー */
+    let _reRenderTimer = null;
     let zoomLevel = 100;
     let selectedAnnotation = null;
     /** グレーアウトパネルで最後に表示した種別 */
@@ -7524,7 +7537,8 @@
       }
 
       const dpr   = window.devicePixelRatio || 1;
-      const scale = (pageEl.offsetWidth / baseViewport.width) * dpr;
+      // ズームレベルを乗算することで、拡大時も常に高解像度でレンダリングする
+      const scale = (pageEl.offsetWidth / baseViewport.width) * dpr * (zoomLevel / 100);
       const viewport = pdfPage.getViewport({ scale });
 
       // canvas サイズを更新し、確実にクリアする
@@ -7536,9 +7550,10 @@
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, newW, newH);
 
-      // CSS サイズを明示的に設定し、100% 自動計算による文字位置ずれを防ぐ
-      canvas.style.width  = Math.round(newW / dpr) + 'px';
-      canvas.style.height = Math.round(newH / dpr) + 'px';
+      // CSS サイズはCSS transformで拡大される前のページサイズに合わせる
+      // （Canvas物理ピクセルはズームレベル分増えているが、表示CSSサイズはtransform前に揃える）
+      canvas.style.width  = pageEl.offsetWidth  + 'px';
+      canvas.style.height = pageEl.offsetHeight + 'px';
 
       try {
         _currentRenderTask = pdfPage.render({
@@ -7610,6 +7625,10 @@
 
       // 複数選択バウンディングボックスを更新
       updateAlignPanel();
+
+      // ズームが止まってから300ms後に高解像度で再描画する（連続ホイール操作中は再描画を遅延）
+      clearTimeout(_reRenderTimer);
+      _reRenderTimer = setTimeout(() => renderPage(currentPage), 300);
     }
 
     /**
