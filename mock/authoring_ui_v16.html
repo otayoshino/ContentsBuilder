@@ -1468,14 +1468,14 @@
       font-size: 11px;
       color: #444;
     }
-    /* 紙面カラー型オブジェクト：編集モードは薄青破線枠、閲覧モードは白（不可視） */
+    /* 紙面カラー型オブジェクト：編集モードは薄青破線枠、閲覧モードは透明 */
     body:not(.is-view-mode) .ann-object.dt-page-color {
       background: rgba(68, 114, 196, 0.08) !important;
       outline: 2px dashed rgba(68, 114, 196, 0.5);
       outline-offset: -2px;
     }
     .is-view-mode .ann-object.dt-page-color {
-      background: #fff !important;
+      background: transparent !important;
       outline: none;
     }
 
@@ -3471,10 +3471,13 @@
 
       switch (type) {
         case 'pagelink': {
-          const idx = parseInt(saved.annTarget ?? '0', 10);
-          const pages = ['1ページ', '2ページ', '10ページ', '50ページ'];
-          const target = pages[idx] ?? pages[0];
-          updateStatus(`ページリンク: ${target}へ移動`);
+          const targetPage = parseInt(saved.annTarget ?? '0', 10);
+          if (targetPage >= 1 && targetPage <= totalPages) {
+            currentPage = targetPage;
+            updatePageDisplay();
+          } else {
+            showToast('ページリンク: 移動先ページが設定されていません');
+          }
           break;
         }
         case 'plusfile': {
