@@ -2116,7 +2116,7 @@
         fields: [
           { id: 'annDisplayType' }, { id: 'annPosX' }, { id: 'annPosY' },
           { id: 'annWidth' }, { id: 'annHeight' }, { id: 'annColor' },
-          { id: 'annShowMode' }, { id: 'annUrl' },
+          { id: 'annUrl' },
         ]
       },
       audio: {
@@ -3532,12 +3532,6 @@
         form.appendChild(_buildTextDD('annFile', savedData.annFile || '', ''));
 
       } else if (type === 'externallink') {
-        const showMode = savedData.annShowMode || '0';
-        form.appendChild(_buildRadioDt('表示方法'));
-        form.appendChild(_buildRadioDD('annShowMode', 'annShowModeRadio', showMode, [
-          { value: '0', label: 'ページ内' },
-          { value: '1', label: '別タブ' },
-        ]));
         form.appendChild(_buildTextDt('リンク先URL'));
         form.appendChild(_buildTextDD('annUrl', savedData.annUrl || '', 'https://...'));
 
